@@ -487,7 +487,7 @@ export default RegistrationPortal;
  
 //   const fetchUsers = async () => {
 //     try {
-//       const res = await fetch("http://192.168.1.17:8000/api/students/");
+//       const res = await fetch("http://192.168.29.207:8000/api/students/");
 //       const data = await res.json();
 //       setUsers(data);
 //     } catch (err) {
@@ -510,7 +510,7 @@ export default RegistrationPortal;
 //     }
  
 //     try {
-//       const response = await fetch("http://192.168.1.17:8000/api/register_student/", {
+//       const response = await fetch("http://192.168.29.207:8000/api/register_student/", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify(formData)

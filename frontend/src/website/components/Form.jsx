@@ -50,24 +50,43 @@ const Form = () => {
         setIsSubmitting(true);
 
         try {
-            await fetch(
-                "https://script.google.com/macros/s/AKfycbzRekAWctrwCYgqSJEG3DBfpAJeAQr_eiRA8seWfMU8njHOMlz-wiSmG_7XwCoPKmI/exec",
-                {
-                    method: "POST",
-                    body: JSON.stringify(form),
-                }
-            );
+            const payload = {
+                name: form.name,
+                email: form.email,
+                phone: form.phone,
+                courseSpecialization: form.course,
+                // Required fields with defaults for this consultation form
+                degreeType: "Not Specified",
+                passOutYear: "Not Specified",
+                enrollmentType: "Training",
+                mode: "Offline",
+                paymentStatus: "Pending",
+                password: "ConsultationRequest@2024", // placeholder
+            };
 
-            alert("✅ Submitted Successfully!");
-
-            setForm({
-                name: "",
-                email: "",
-                phone: "",
-                course: "",
+            const response = await fetch("http://127.0.0.1:8000/api/register_student/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
             });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("✅ Submitted Successfully! Our team will contact you shortly.");
+                setForm({ name: "", email: "", phone: "", course: "" });
+            } else {
+                // If student already registered with this email, still show success
+                if (data.email && data.email[0]?.includes("already exists")) {
+                    alert("✅ You're already registered! Our team will contact you.");
+                    setForm({ name: "", email: "", phone: "", course: "" });
+                } else {
+                    alert("❌ Error: " + JSON.stringify(data));
+                }
+            }
         } catch (error) {
-            alert("❌ Error submitting form");
+            console.error("Submit error:", error);
+            alert("❌ Server error. Please try again.");
         } finally {
             setIsSubmitting(false);
         }

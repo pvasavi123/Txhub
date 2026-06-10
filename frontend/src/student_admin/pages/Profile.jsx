@@ -39,6 +39,24 @@ const Profile = () => {
                 <label className="block text-sm text-slate-500 mb-1">Email Address</label>
                 <div className="p-3 bg-slate-50 rounded-lg text-slate-800 font-medium">{user?.email || 'student@example.com'}</div>
               </div>
+              {user?.college && (
+                <div>
+                  <label className="block text-sm text-slate-500 mb-1">College / University</label>
+                  <div className="p-3 bg-slate-50 rounded-lg text-slate-800 font-medium">{user.college}</div>
+                </div>
+              )}
+              {user?.branch && (
+                <div>
+                  <label className="block text-sm text-slate-500 mb-1">Branch</label>
+                  <div className="p-3 bg-slate-50 rounded-lg text-slate-800 font-medium">{user.branch}</div>
+                </div>
+              )}
+              {user?.degree && (
+                <div>
+                  <label className="block text-sm text-slate-500 mb-1">Degree</label>
+                  <div className="p-3 bg-slate-50 rounded-lg text-slate-800 font-medium">{user.degree}</div>
+                </div>
+              )}
             </div>
           </div>
           <div>

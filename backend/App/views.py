@@ -31,19 +31,29 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 @api_view(['POST'])
 def register_user(request):
-    data = request.data
+    data = request.data.copy()
 
     # check email exists
     if UserRegister.objects.filter(email=data.get('email')).exists():
         return Response({"error": "Email already exists"}, status=400)
 
+    # Hash the password before saving
+    raw_password = data.get('password', '')
+    if raw_password:
+        data['password'] = make_password(raw_password)
+
     serializer = UserRegisterSerializer(data=data)
 
     if serializer.is_valid():
-        serializer.save()
+        user = serializer.save()
         return Response({
             "message": "User registered successfully",
-            "data": serializer.data
+            "data": {
+                "id": user.id,
+                "full_name": data.get('full_name'),
+                "email": data.get('email'),
+                "phone": data.get('phone'),
+            }
         }, status=201)
 
     return Response(serializer.errors, status=400)
@@ -81,6 +91,8 @@ def register_user(request):
 #     return Response({"error": "User not found"}, status=404)
 
 
+from django.contrib.auth.hashers import check_password
+
 @api_view(['POST'])
 def login_user(request):
     email = request.data.get('email')
@@ -89,7 +101,7 @@ def login_user(request):
     # 🔹 1. Check Admin
     admin = AdminUser.objects.filter(email=email).first()
     if admin:
-        if password == admin.password:
+        if password == admin.password or check_password(password, admin.password):
             return Response({
                 "message": "Admin Login successful",
                 "type": "admin",
@@ -103,11 +115,12 @@ def login_user(request):
     # 🔹 2. Check Normal User
     user = UserRegister.objects.filter(email=email).first()
     if user:
-        if password == user.password:
+        if password == user.password or check_password(password, user.password):
             return Response({
                 "message": "User Login successful",
                 "type": "user",
                 "data": {
+                    "id": user.id,
                     "full_name": user.full_name,
                     "email": user.email,
                     "phone": user.phone
@@ -119,12 +132,12 @@ def login_user(request):
     # 🔹 3. Check Student
     student = Student.objects.filter(email=email).first()
     if student:
-        if password == student.password:
+        if password == student.password or check_password(password, student.password):
             return Response({
                 "message": "Student Login successful",
                 "type": "student",
                 "data": {
-                    "id": student.id,   # ✅ IMPORTANT (you wanted user id)
+                    "id": student.id,
                     "name": student.name,
                     "email": student.email,
                     "college": student.collegeName,
@@ -206,7 +219,14 @@ def trainer_profile(request):
 
 @api_view(['POST'])
 def register_student(request):
-    serializer = StudentSerializer(data=request.data)
+    data = request.data.copy()
+    
+    # Hash password if provided
+    raw_password = data.get('password', '')
+    if raw_password:
+        data['password'] = make_password(raw_password)
+        
+    serializer = StudentSerializer(data=data)
    
     if serializer.is_valid():
         serializer.save()
@@ -361,36 +381,76 @@ def get_students(request):
     course = request.query_params.get('course')
     trainer_id = request.query_params.get('trainer_id')
     
-    students = Student.objects.all().order_by('-id')
-    
-    # Temporarily comment out the strict filtering so the mentor can see all students
-    # if trainer_id:
-    #     try:
-    #         trainer = Trainer.objects.get(id=trainer_id)
-    #         if trainer.assigned_course and trainer.assigned_course != 'All Courses':
-    #             students = students.filter(courseSpecialization__icontains=trainer.assigned_course)
-    #     except Trainer.DoesNotExist:
-    #         pass
+    target_course = None
+    if trainer_id:
+        try:
+            trainer = Trainer.objects.get(id=trainer_id)
+            if trainer.assigned_course and trainer.assigned_course != 'All Courses':
+                target_course = normalize_course(trainer.assigned_course)
+        except Trainer.DoesNotExist:
+            pass
             
-    # if course and course != 'All Courses':
-    #     students = students.filter(courseSpecialization__icontains=course)
-        
-    serializer = StudentSerializer(students, many=True)
-    
-    # Normalize data for frontend: map courseSpecialization -> course, paymentStatus -> status
-    data = []
-    for item in serializer.data:
-        # Try to find an enrollment for this student's email to grab the batch date
-        enrollment = Enrollment.objects.filter(user__email=item.get('email')).order_by('-created_at').first()
-        batch_date = enrollment.batch_date if enrollment and enrollment.batch_date else "Not Specified"
+    if course and course != 'All Courses':
+        target_course = normalize_course(course)
 
+    data = []
+    seen_emails = set()
+
+    # 1. From Student table
+    for s in Student.objects.all().order_by('-id'):
+        s_course = normalize_course(s.courseSpecialization)
+        # If mentor has a specific assigned course, only show students matching that course
+        if target_course and s_course != target_course:
+            continue
+            
+        if s.email in seen_emails:
+            continue
+        seen_emails.add(s.email)
+
+        enrollment = Enrollment.objects.filter(user__email=s.email).order_by('-created_at').first()
+        batch_date = enrollment.batch_date if enrollment and enrollment.batch_date else "Not Specified"
+        
         data.append({
-            **item,
-            'course': item.get('courseSpecialization', 'Not Specified'),
-            'status': 'Active' if item.get('paymentStatus') == 'Paid' else 'At Risk',
-            'progress': 0,  # Will be computed from attendance in future
+            'id': s.id,
+            'name': s.name,
+            'email': s.email,
+            'phone': s.phone,
+            'course': s.courseSpecialization or 'Not Specified',
+            'status': 'Active' if s.paymentStatus == 'Paid' else 'At Risk',
+            'progress': 0,
             'batch_date': batch_date,
         })
+        
+    # 2. From Enrollment table (for users who bought via cart but aren't in Student)
+    for e in Enrollment.objects.select_related('user').all().order_by('-created_at'):
+        if not e.user or e.user.email in seen_emails:
+            continue
+            
+        has_match = False
+        e_course_name = "Not Specified"
+        if isinstance(e.items, list):
+            for item in e.items:
+                title = item.get("title") or item.get("name")
+                norm_title = normalize_course(title)
+                # Ensure we only include students who enrolled in the target course
+                if not target_course or norm_title == target_course:
+                    has_match = True
+                    e_course_name = title
+                    break
+                    
+        if has_match:
+            seen_emails.add(e.user.email)
+            data.append({
+                'id': e.user.id, # fallback to user id to avoid string ids
+                'name': e.user.full_name,
+                'email': e.user.email,
+                'phone': e.user.phone,
+                'course': e_course_name,
+                'status': 'Active' if e.payment_status == 'completed' else 'At Risk',
+                'progress': 0,
+                'batch_date': e.batch_date or "Not Specified",
+            })
+
     return Response(data)
 
 
@@ -692,11 +752,11 @@ def normalize_course(name):
  
     name = name.lower().strip()
  
-    # ✅ FULL STACK
-    if "full" in name or "react" in name:
+    # 🔹 FULL STACK
+    if "full" in name or "react" in name or "mern" in name:
         return "React Full Stack Development"
  
-    # ✅ UI/UX
+    # 🔹 UI/UX
     elif "ui" in name or "ux" in name:
         return "UI/UX Design"
  
@@ -815,48 +875,44 @@ def mentor_overview(request):
     """Single endpoint for the Mentor Dashboard Overview tab stats."""
     trainer_id = request.query_params.get('trainer_id')
     
-    students = Student.objects.all()
+    # Leverage the existing get_students view to get cross-table filtered students
+    students_data = get_students(request).data
+    
     assignments = Assignment.objects.all()
     notes = Note.objects.all()
     
     if trainer_id:
         try:
             trainer = Trainer.objects.get(id=trainer_id)
-            # if trainer.assigned_course and trainer.assigned_course != 'All Courses':
-            #     students = students.filter(courseSpecialization__icontains=trainer.assigned_course)
-            #     assignments = assignments.filter(course__icontains=trainer.assigned_course)
-            #     notes = notes.filter(course__icontains=trainer.assigned_course)
+            if trainer.assigned_course and trainer.assigned_course != 'All Courses':
+                target_course = normalize_course(trainer.assigned_course)
+                # Keep assignments and notes matching the trainer's course
+                assignments = [a for a in assignments if target_course in (normalize_course(a.course) or "")]
+                notes = [n for n in notes if target_course in (normalize_course(n.course) or "")]
         except Trainer.DoesNotExist:
             pass
 
-    total_students = students.count()
-    total_assignments = assignments.count()
-    active_assignments = assignments.filter(dueDate__isnull=False).count()
-    total_notes = notes.count()
+    total_students = len(students_data)
+    total_assignments = len(assignments) if isinstance(assignments, list) else assignments.count()
     
-    # Course breakdown from students
+    if isinstance(assignments, list):
+        active_assignments = len([a for a in assignments if getattr(a, 'dueDate', None) is not None])
+    else:
+        active_assignments = assignments.filter(dueDate__isnull=False).count()
+        
+    total_notes = len(notes) if isinstance(notes, list) else notes.count()
+    
+    # Course breakdown from students_data
     course_breakdown = {}
-    for course in students.values_list('courseSpecialization', flat=True):
-        normalized = normalize_course(course)
-        if normalized:
-            course_breakdown[normalized] = course_breakdown.get(normalized, 0) + 1
+    for s in students_data:
+        course = s.get('course')
+        if course:
+            normalized = normalize_course(course)
+            if normalized:
+                course_breakdown[normalized] = course_breakdown.get(normalized, 0) + 1
     
     # Recent 5 students
-    recent_students = []
-    for s in students.order_by('-id')[:5]:
-        # Fetch batch_date from enrollment
-        enrollment = Enrollment.objects.filter(user__email=s.email).order_by('-created_at').first()
-        batch_date = enrollment.batch_date if enrollment and enrollment.batch_date else 'Not Specified'
-        recent_students.append({
-            'id': s.id,
-            'name': s.name,
-            'email': s.email,
-            'course': s.courseSpecialization or 'Not Specified',
-            'status': 'Active' if s.paymentStatus == 'Paid' else 'At Risk',
-            'progress': 0,
-            'batch_date': batch_date,
-            'created_at': s.created_at.strftime('%d %b %Y'),
-        })
+    recent_students = students_data[:5]
     
     return Response({
         'total_students': total_students,
@@ -877,10 +933,15 @@ def mentor_overview(request):
 def manage_assignments(request):
     if request.method == 'GET':
         course = request.query_params.get('course')
+        trainer_id = request.query_params.get('trainer_id')
+        
+        assignments = Assignment.objects.all()
+        if trainer_id:
+            assignments = assignments.filter(trainer_id=trainer_id)
         if course and course != 'All Courses':
-            assignments = Assignment.objects.filter(course=course).order_by('-created_at')
-        else:
-            assignments = Assignment.objects.all().order_by('-created_at')
+            assignments = assignments.filter(course__icontains=course)
+            
+        assignments = assignments.order_by('-created_at')
         serializer = AssignmentSerializer(assignments, many=True)
         return Response(serializer.data)
     
@@ -890,7 +951,6 @@ def manage_assignments(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 @api_view(['DELETE'])
 @authentication_classes([])
 @permission_classes([])
@@ -901,17 +961,21 @@ def delete_assignment(request, pk):
         return Response({"message": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
     except Assignment.DoesNotExist:
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-
 @api_view(['GET', 'POST'])
 @authentication_classes([])
 @permission_classes([])
 def manage_notes(request):
     if request.method == 'GET':
         course = request.query_params.get('course')
+        trainer_id = request.query_params.get('trainer_id')
+        
+        notes = Note.objects.all()
+        if trainer_id:
+            notes = notes.filter(trainer_id=trainer_id)
         if course and course != 'All Courses':
-            notes = Note.objects.filter(course=course).order_by('-created_at')
-        else:
-            notes = Note.objects.all().order_by('-created_at')
+            notes = notes.filter(course__icontains=course)
+            
+        notes = notes.order_by('-created_at')
         serializer = NoteSerializer(notes, many=True)
         return Response(serializer.data)
     
@@ -921,7 +985,6 @@ def manage_notes(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 @api_view(['DELETE'])
 @authentication_classes([])
 @permission_classes([])
@@ -932,7 +995,6 @@ def delete_note(request, pk):
         return Response({"message": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
     except Note.DoesNotExist:
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-
 @api_view(['GET', 'POST'])
 @authentication_classes([])
 @permission_classes([])
@@ -969,60 +1031,150 @@ def manage_attendance(request):
                 
             try:
                 student = Student.objects.get(pk=student_id)
-                obj, created = StudentAttendance.objects.update_or_create(
-                    student=student, date=date, course=course,
-                    defaults={'status': status_val}
-                )
-                saved_records.append(StudentAttendanceSerializer(obj).data)
             except Student.DoesNotExist:
-                continue
+                # If they are a UserRegister, create a shadow Student record for FK relation
+                try:
+                    ur = UserRegister.objects.get(pk=student_id)
+                    student = Student.objects.create(
+                        name=ur.full_name,
+                        email=ur.email,
+                        phone=ur.phone,
+                        courseSpecialization=course,
+                        paymentStatus='Paid'
+                    )
+                except UserRegister.DoesNotExist:
+                    continue
+
+            obj, created = StudentAttendance.objects.update_or_create(
+                student=student, date=date, course=course,
+                defaults={'status': status_val}
+            )
+            saved_records.append(StudentAttendanceSerializer(obj).data)
                 
         return Response(saved_records, status=status.HTTP_200_OK)
-
+def get_student_info(student_id=None, email=None):
+    student_course = ""
+    batch_date = ""
+    
+    # 1. Try Student model
+    try:
+        if student_id:
+            s = Student.objects.get(id=student_id)
+        elif email:
+            s = Student.objects.get(email=email)
+        else:
+            raise Student.DoesNotExist
+            
+        student_course = s.courseSpecialization or ""
+        enrollment = Enrollment.objects.filter(user__email=s.email).order_by('-created_at').first()
+        if enrollment and enrollment.batch_date:
+            batch_date = enrollment.batch_date
+        return student_course, batch_date
+    except Student.DoesNotExist:
+        pass
+        
+    # 2. Try UserRegister model
+    try:
+        if student_id:
+            u = UserRegister.objects.get(id=student_id)
+        elif email:
+            u = UserRegister.objects.get(email=email)
+        else:
+            raise UserRegister.DoesNotExist
+            
+        enrollment = Enrollment.objects.filter(user=u).order_by('-created_at').first()
+        if enrollment:
+            if enrollment.batch_date:
+                batch_date = enrollment.batch_date
+            if isinstance(enrollment.items, list) and len(enrollment.items) > 0:
+                student_course = enrollment.items[0].get("title") or enrollment.items[0].get("name") or ""
+        return student_course, batch_date
+    except UserRegister.DoesNotExist:
+        pass
+        
+    return None, None
 
 @api_view(['GET'])
 def student_notes(request):
-    # Expects student_id to identify their course and optionally batch
     student_id = request.query_params.get('student_id')
-    if not student_id:
-        return Response({"error": "student_id is required"}, status=400)
+    email = request.query_params.get('email')
+    
+    if not student_id and not email:
+        return Response({"error": "student_id or email is required"}, status=400)
         
-    try:
-        student = Student.objects.get(id=student_id)
-        enrollment = Enrollment.objects.filter(user__email=student.email).order_by('-created_at').first()
-        batch_date = enrollment.batch_date if enrollment and enrollment.batch_date else ""
-        
-        # Assuming we filter by student's course specialization
-        notes = Note.objects.filter(course__icontains=student.courseSpecialization)
-        # Add batch filtering (allow notes with no batch specified OR matching batch)
-        if batch_date:
-            from django.db.models import Q
-            notes = notes.filter(Q(batch_month='') | Q(batch_month=batch_date))
-            
-        notes = notes.order_by('-created_at')
-        return Response(NoteSerializer(notes, many=True).data)
-    except Student.DoesNotExist:
+    student_course, batch_date = get_student_info(student_id=student_id, email=email)
+    if student_course is None:
         return Response({"error": "Student not found"}, status=404)
-
+        
+    notes = Note.objects.all().order_by('-created_at')
+    filtered_notes = []
+    
+    norm_student_course = normalize_course(student_course) or student_course.lower()
+    
+    for n in notes:
+        norm_note_course = normalize_course(n.course) or (n.course.lower() if n.course else "")
+        # Match course (fallback to exact match if normalize fails)
+        if norm_note_course == norm_student_course or norm_note_course in norm_student_course or norm_student_course in norm_note_course or n.course == student_course:
+            # Match batch robustly (Month and Year)
+            if batch_date and n.batch_month and n.batch_month != 'Not Specified':
+                b1 = " ".join(batch_date.split()[-2:]).lower()
+                b2 = " ".join(n.batch_month.split()[-2:]).lower()
+                if b1 and b2 and b1 != b2:
+                    continue
+            filtered_notes.append(n)
+            
+    return Response(NoteSerializer(filtered_notes, many=True).data)
 
 @api_view(['GET'])
 def student_assignments(request):
     student_id = request.query_params.get('student_id')
-    if not student_id:
-        return Response({"error": "student_id is required"}, status=400)
+    email = request.query_params.get('email')
+    
+    if not student_id and not email:
+        return Response({"error": "student_id or email is required"}, status=400)
         
-    try:
-        student = Student.objects.get(id=student_id)
-        enrollment = Enrollment.objects.filter(user__email=student.email).order_by('-created_at').first()
-        batch_date = enrollment.batch_date if enrollment and enrollment.batch_date else ""
-        
-        assignments = Assignment.objects.filter(course__icontains=student.courseSpecialization)
-        # Add batch filtering (allow assignments with no batch specified OR matching batch)
-        if batch_date:
-            from django.db.models import Q
-            assignments = assignments.filter(Q(batch_month='') | Q(batch_month=batch_date))
-            
-        assignments = assignments.order_by('-created_at')
-        return Response(AssignmentSerializer(assignments, many=True).data)
-    except Student.DoesNotExist:
+    student_course, batch_date = get_student_info(student_id=student_id, email=email)
+    if student_course is None:
         return Response({"error": "Student not found"}, status=404)
+        
+    assignments = Assignment.objects.all().order_by('-created_at')
+    filtered_assignments = []
+    
+    norm_student_course = normalize_course(student_course) or student_course.lower()
+    
+    for a in assignments:
+        norm_assignment_course = normalize_course(a.course) or (a.course.lower() if a.course else "")
+        # Match course
+        if norm_assignment_course == norm_student_course or norm_assignment_course in norm_student_course or norm_student_course in norm_assignment_course or a.course == student_course:
+            # Match batch robustly (Month and Year)
+            if batch_date and a.batch_month and a.batch_month != 'Not Specified':
+                b1 = " ".join(batch_date.split()[-2:]).lower()
+                b2 = " ".join(a.batch_month.split()[-2:]).lower()
+                if b1 and b2 and b1 != b2:
+                    continue
+            filtered_assignments.append(a)
+            
+    return Response(AssignmentSerializer(filtered_assignments, many=True).data)
+
+@api_view(['GET'])
+def debug_db(request):
+    students = list(Student.objects.values('id', 'name', 'courseSpecialization'))
+    notes = list(Note.objects.values('id', 'title', 'course', 'batch_month'))
+    assignments = list(Assignment.objects.values('id', 'title', 'course', 'batch_month'))
+    enrolls = list(Enrollment.objects.values('user_id', 'title', 'items', 'batch_date'))
+    users = list(UserRegister.objects.values('id', 'full_name', 'email'))
+    
+    # Test get_student_info for all users
+    debug_students = {}
+    for u in users:
+        c, b = get_student_info(u['id'])
+        debug_students[u['id']] = {"course": c, "batch": b}
+    
+    return Response({
+        "users": users,
+        "students": students,
+        "notes": notes,
+        "assignments": assignments,
+        "enrolls": enrolls,
+        "debug_students": debug_students
+    })

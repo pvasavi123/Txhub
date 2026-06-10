@@ -38,5 +38,6 @@ urlpatterns = [
     path('notes/<int:pk>/', views.delete_note),
     path('attendance/', views.manage_attendance),
     path('mentor-overview/', views.mentor_overview),
+    path('debug/', views.debug_db),
 ]
 

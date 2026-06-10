@@ -131,20 +131,45 @@ export default function MentorDashboard() {
       try {
         const params = trainerData ? { trainer_id: trainerData.id } : {};
         
-        const [studentsRes, notesRes, assignmentsRes, overviewRes] = await Promise.all([
+        // Use allSettled so one failing endpoint doesn't block others
+        const [studentsRes, notesRes, assignmentsRes, overviewRes] = await Promise.allSettled([
           api.get('/students/', { params }),
           api.get('/notes/', { params }),
           api.get('/assignments/', { params }),
           api.get('/mentor-overview/', { params }),
         ]);
         
-        if (studentsRes.data?.length > 0) setStudents(studentsRes.data);
-        if (notesRes.data?.length > 0) setNotes(notesRes.data);
-        if (assignmentsRes.data?.length > 0) setAssignments(assignmentsRes.data);
-        if (overviewRes.data) {
-          setOverviewData(overviewRes.data);
-          if (overviewRes.data.course_breakdown) {
-            const dynamicCourses = Object.entries(overviewRes.data.course_breakdown)
+        // Process students — core data, always show
+        if (studentsRes.status === 'fulfilled') {
+          const studentData = studentsRes.value.data;
+          if (Array.isArray(studentData) && studentData.length > 0) {
+            setStudents(studentData);
+          }
+        } else {
+          console.error('Students fetch failed:', studentsRes.reason);
+        }
+
+        // Process notes
+        if (notesRes.status === 'fulfilled') {
+          const notesData = notesRes.value.data;
+          if (Array.isArray(notesData) && notesData.length > 0) setNotes(notesData);
+        } else {
+          console.error('Notes fetch failed:', notesRes.reason);
+        }
+
+        // Process assignments
+        if (assignmentsRes.status === 'fulfilled') {
+          const assignmentsData = assignmentsRes.value.data;
+          if (Array.isArray(assignmentsData) && assignmentsData.length > 0) setAssignments(assignmentsData);
+        } else {
+          console.error('Assignments fetch failed:', assignmentsRes.reason);
+        }
+
+        // Process overview
+        if (overviewRes.status === 'fulfilled' && overviewRes.value.data) {
+          setOverviewData(overviewRes.value.data);
+          if (overviewRes.value.data.course_breakdown) {
+            const dynamicCourses = Object.entries(overviewRes.value.data.course_breakdown)
               .filter(([, count]) => count > 0)
               .map(([title, count], i) => ({
                 id: i + 1, title,
@@ -157,14 +182,23 @@ export default function MentorDashboard() {
             if (dynamicCourses.length > 0) {
               setCourses(dynamicCourses);
             } else if (trainerData?.assigned_course) {
-              // If no students yet, still show the assigned course so they can upload notes
               setCourses([{
                 id: 1, title: trainerData.assigned_course, students: 0, rating: 5.0, progress: 0,
                 image: COURSE_IMAGES[trainerData.assigned_course] || COURSE_IMAGES['default']
               }]);
             }
           }
+        } else {
+          // Fallback: still show the mentor's course even if overview fails
+          if (trainerData?.assigned_course) {
+            setCourses([{
+              id: 1, title: trainerData.assigned_course, students: 0, rating: 5.0, progress: 0,
+              image: COURSE_IMAGES[trainerData.assigned_course] || COURSE_IMAGES['default']
+            }]);
+          }
+          console.error('Overview fetch failed:', overviewRes.reason);
         }
+
       } catch (error) {
         console.error('Error fetching mentor data:', error);
       } finally {
@@ -323,7 +357,26 @@ export default function MentorDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map(student => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3 text-slate-400">
+                      <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm font-semibold">Loading students...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3 text-slate-400">
+                      <GraduationCap className="w-12 h-12 text-slate-200" />
+                      <p className="text-sm font-semibold">No students found for your course yet.</p>
+                      <p className="text-xs">Students who register for your assigned course will appear here.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filtered.map(student => (
                 <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">

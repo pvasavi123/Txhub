@@ -9,9 +9,19 @@ const Notes = () => {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user) return;
     
-    fetch(`http://127.0.0.1:8000/api/student/notes/?student_id=${user.id}`)
+    // Always pass what we have so the backend can resolve the student
+    const idParam = user.id ? `student_id=${user.id}` : '';
+    const emailParam = user.email ? `email=${encodeURIComponent(user.email)}` : '';
+    const queryParams = [idParam, emailParam].filter(Boolean).join('&');
+    
+    if (!queryParams) {
+        setLoading(false);
+        return;
+    }
+
+    fetch(`http://127.0.0.1:8000/api/student/notes/?${queryParams}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setNotes(data);
