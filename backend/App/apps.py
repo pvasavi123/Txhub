@@ -9,7 +9,7 @@ class AppConfig(AppConfig):
         if 'runserver' in sys.argv:
             try:
                 from .models import Trainer
-                email = "trainer@txhub.com"
+                email = "trainer@gmail.com"
                 trainer = Trainer.objects.filter(email=email).first()
                 if not trainer:
                     trainer = Trainer(
@@ -20,13 +20,13 @@ class AppConfig(AppConfig):
                     )
                     trainer.set_password("password123")
                     trainer.save()
-                    print("✅ AUTO-CREATED TRAINER ACCOUNT (trainer@txhub.com / password123)")
+                    print("✅ AUTO-CREATED TRAINER ACCOUNT (trainer@gmail.com / password123)")
                 else:
                     # Force password reset just in case
                     trainer.assigned_course = "All Courses"
                     trainer.set_password("password123")
                     trainer.is_active = True
                     trainer.save()
-                    print("✅ AUTO-RESET TRAINER PASSWORD (trainer@txhub.com / password123)")
+                    print("✅ AUTO-RESET TRAINER PASSWORD (trainer@gmail.com / password123)")
             except Exception as e:
                 pass

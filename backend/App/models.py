@@ -228,6 +228,10 @@ class Enrollment(models.Model):
 COURSE_CHOICES = [
     ('All Courses', 'All Courses'),
     ('React Full Stack Development', 'React Full Stack Development'),
+    ('Java Full Stack', 'Java Full Stack'),
+    ('Python Development', 'Python Development'),
+    ('MERN Stack', 'MERN Stack'),
+    ('SQL & Data Analytics', 'SQL & Data Analytics'),
     ('Software Development', 'Software Development'),
     ('Testing', 'Testing'),
     ('UI/UX Design', 'UI/UX Design'),
@@ -312,7 +316,7 @@ class Cart(models.Model):
 class Assignment(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    course = models.CharField(max_length=100, choices=COURSE_CHOICES)
+    course = models.CharField(max_length=100)
     batch_month = models.CharField(max_length=100, blank=True, default='')  # e.g. 'June Batch'
     dueDate = models.DateField(null=True, blank=True)
     trainer = models.ForeignKey('Trainer', on_delete=models.SET_NULL, null=True, blank=True)
@@ -320,9 +324,9 @@ class Assignment(models.Model):
 class Note(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField(blank=True)
-    course = models.CharField(max_length=100, choices=COURSE_CHOICES)
+    course = models.CharField(max_length=100)
     batch_month = models.CharField(max_length=100, blank=True, default='')  # e.g. 'June Batch'
-    fileLink = models.URLField(blank=True, null=True)
+    fileLink = models.FileField(upload_to='notes/', blank=True, null=True)
     trainer = models.ForeignKey('Trainer', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 class StudentAttendance(models.Model):

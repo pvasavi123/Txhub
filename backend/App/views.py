@@ -28,8 +28,10 @@ from App.serializers import (
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import permission_classes, authentication_classes
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def register_user(request):
     data = request.data.copy()
 
@@ -94,6 +96,8 @@ def register_user(request):
 from django.contrib.auth.hashers import check_password
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def login_user(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -156,6 +160,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def trainer_login(request):
     email = request.data.get('email', '').strip().lower()
     password = request.data.get('password', '').strip()
@@ -218,6 +224,8 @@ def trainer_profile(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def register_student(request):
     data = request.data.copy()
     
@@ -374,13 +382,7 @@ def create_enrollment(request):
 
 from rest_framework.decorators import authentication_classes, permission_classes
 
-@api_view(['GET'])
-@authentication_classes([])
-@permission_classes([])
-def get_students(request):
-    course = request.query_params.get('course')
-    trainer_id = request.query_params.get('trainer_id')
-    
+def _get_students_data(course=None, trainer_id=None):
     target_course = None
     if trainer_id:
         try:
@@ -451,12 +453,24 @@ def get_students(request):
                 'batch_date': e.batch_date or "Not Specified",
             })
 
+    return data
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([])
+def get_students(request):
+    course = request.query_params.get('course')
+    trainer_id = request.query_params.get('trainer_id')
+    data = _get_students_data(course=course, trainer_id=trainer_id)
     return Response(data)
+
 
 
 
 GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def google_login(request):
     token = request.data.get("access_token")
  
@@ -527,6 +541,8 @@ import random
 # Cart Views
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def forgot_password(request):
     email = request.data.get('email')
     action = request.data.get('action')
@@ -737,6 +753,12 @@ from collections import Counter
  
 COURSE_CATEGORIES = [
     "React Full Stack Development",
+    "Java Full Stack",
+    "Python Development",
+    "Front End Web development"
+    "MERN Stack",
+    "SQL & Data Analytics",
+    "Software Development",
     "UI/UX Design",
     "AI/ML",
     "Testing",
@@ -752,8 +774,22 @@ def normalize_course(name):
  
     name = name.lower().strip()
  
+    if "all courses" in name:
+        return "All Courses"
+        
+    if "java" in name:
+        return "Java Full Stack"
+    if "python" in name:
+        return "Python Development"
+    if "mern" in name:
+        return "MERN Stack"
+    if "sql" in name or "analytics" in name:
+        return "SQL & Data Analytics"
+    if "software" in name:
+        return "Software Development"
+ 
     # 🔹 FULL STACK
-    if "full" in name or "react" in name or "mern" in name:
+    if "full" in name or "react" in name:
         return "React Full Stack Development"
  
     # 🔹 UI/UX
@@ -874,9 +910,8 @@ def dashboard_counts(request):
 def mentor_overview(request):
     """Single endpoint for the Mentor Dashboard Overview tab stats."""
     trainer_id = request.query_params.get('trainer_id')
-    
-    # Leverage the existing get_students view to get cross-table filtered students
-    students_data = get_students(request).data
+    # Leverage the helper to get cross-table filtered students
+    students_data = _get_students_data(trainer_id=trainer_id)
     
     assignments = Assignment.objects.all()
     notes = Note.objects.all()
@@ -976,7 +1011,7 @@ def manage_notes(request):
             notes = notes.filter(course__icontains=course)
             
         notes = notes.order_by('-created_at')
-        serializer = NoteSerializer(notes, many=True)
+        serializer = NoteSerializer(notes, many=True, context={'request': request})
         return Response(serializer.data)
     
     elif request.method == 'POST':
@@ -984,6 +1019,7 @@ def manage_notes(request):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print("NoteSerializer errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 @api_view(['DELETE'])
 @authentication_classes([])
@@ -1178,3 +1214,110 @@ def debug_db(request):
         "enrolls": enrolls,
         "debug_students": debug_students
     })
+
+from django.db.models import Q
+from datetime import datetime
+
+def parse_batch_date(date_str):
+    if not date_str:
+        return None
+    # Assuming formats like "15 May 2026" or "01 June 2026"
+    try:
+        return datetime.strptime(date_str.strip(), "%d %B %Y").date()
+    except ValueError:
+        pass
+    try:
+        return datetime.strptime(date_str.strip(), "%d %b %Y").date()
+    except ValueError:
+        pass
+    return None
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([])
+def student_notes(request):
+    email = request.query_params.get('email')
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+    
+    target_course = None
+    batch_date = None
+    
+    # 1. Try Enrollment
+    enrollment = Enrollment.objects.filter(user__email=email).order_by('-created_at').first()
+    if enrollment:
+        batch_date = enrollment.batch_date
+        if isinstance(enrollment.items, list) and len(enrollment.items) > 0:
+            item = enrollment.items[0]
+            title = item.get("title") or item.get("name")
+            target_course = normalize_course(title)
+            
+    # 2. Try Student Table if target_course still empty
+    if not target_course:
+        student = Student.objects.filter(email=email).order_by('-created_at').first()
+        if student:
+            target_course = normalize_course(student.courseSpecialization)
+            
+    if not target_course:
+        return Response({"error": "No valid course found in enrollment or student profile"}, status=404)
+        
+    notes = Note.objects.filter(Q(course=target_course) | Q(course='All Courses'))
+    
+    if batch_date and batch_date != 'All Batches':
+        q_exact = Q(batch_month=batch_date)
+        q_all = Q(batch_month='All Batches') | Q(batch_month='') | Q(batch_month__isnull=True)
+        
+        parsed_batch = parse_batch_date(batch_date)
+        if parsed_batch:
+            # Note created_at must be >= student's batch date
+            q_all = q_all & Q(created_at__date__gte=parsed_batch)
+            
+        notes = notes.filter(q_exact | q_all)
+        
+    serializer = NoteSerializer(notes.distinct().order_by('-created_at'), many=True, context={'request': request})
+    return Response(serializer.data, status=200)
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([])
+def student_assignments(request):
+    email = request.query_params.get('email')
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+        
+    target_course = None
+    batch_date = None
+    
+    # 1. Try Enrollment
+    enrollment = Enrollment.objects.filter(user__email=email).order_by('-created_at').first()
+    if enrollment:
+        batch_date = enrollment.batch_date
+        if isinstance(enrollment.items, list) and len(enrollment.items) > 0:
+            item = enrollment.items[0]
+            title = item.get("title") or item.get("name")
+            target_course = normalize_course(title)
+            
+    # 2. Try Student Table if target_course still empty
+    if not target_course:
+        student = Student.objects.filter(email=email).order_by('-created_at').first()
+        if student:
+            target_course = normalize_course(student.courseSpecialization)
+            
+    if not target_course:
+        return Response({"error": "No valid course found in enrollment or student profile"}, status=404)
+        
+    assignments = Assignment.objects.filter(Q(course=target_course) | Q(course='All Courses'))
+    
+    if batch_date and batch_date != 'All Batches':
+        q_exact = Q(batch_month=batch_date)
+        q_all = Q(batch_month='All Batches') | Q(batch_month='') | Q(batch_month__isnull=True)
+        
+        parsed_batch = parse_batch_date(batch_date)
+        if parsed_batch:
+            # Assignment created_at must be >= student's batch date
+            q_all = q_all & Q(created_at__date__gte=parsed_batch)
+            
+        assignments = assignments.filter(q_exact | q_all)
+        
+    serializer = AssignmentSerializer(assignments.distinct().order_by('-created_at'), many=True)
+    return Response(serializer.data, status=200)

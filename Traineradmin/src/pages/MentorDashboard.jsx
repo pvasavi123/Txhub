@@ -87,6 +87,27 @@ const INITIAL_NOTES = [];
 
 const INITIAL_ASSIGNMENTS = [];
 
+const ALL_COURSES_LIST = [
+  'All Courses',
+  'React Full Stack Development',
+  'Java Full Stack Development',
+  'Python Full Stack',
+  'MERN Stack',
+  'Front End Web Development',
+  'Manual Testing',
+  'Advanced Software Testing',
+  'API Testing with Postman',
+  'Mobile App Automation',
+  'Figma UI/UX Design',
+  'AWS & Devops',
+  'Machine Learning',
+  'Data Science',
+  'Data Analytics',
+  'Leadership & Team Management',
+  'Public Speaking Mastery',
+  'Critical Thinking & Problem Solving'
+];
+
 const TABS = [
   { id: 'overview', label: 'Overview', icon: TrendingUp },
   { id: 'students', label: 'Students', icon: Users },
@@ -486,6 +507,7 @@ export default function MentorDashboard() {
         size: f.size < 1024 * 1024 ? (f.size / 1024).toFixed(1) + ' KB' : (f.size / (1024 * 1024)).toFixed(2) + ' MB',
         ext: f.name.split('.').pop().toUpperCase(),
         id: Date.now() + Math.random(),
+        fileObj: f,
       }));
       setStagedFiles(prev => [...prev, ...newFiles]);
     };
@@ -497,12 +519,16 @@ export default function MentorDashboard() {
       let successCount = 0;
       for (const f of stagedFiles) {
         try {
-          const res = await api.post('/notes/', {
-            title: f.name,
-            course: selectedCourse,
-            batch_month: selectedBatch,
-            content: `Type: ${f.ext}, Size: ${f.size}`,
-            trainer: trainerData?.id || null,
+          const formData = new FormData();
+          formData.append('title', f.name);
+          formData.append('course', selectedCourse);
+          formData.append('batch_month', selectedBatch);
+          formData.append('content', `Type: ${f.ext}, Size: ${f.size}`);
+          formData.append('fileLink', f.fileObj);
+          if (trainerData?.id) formData.append('trainer', trainerData.id);
+
+          const res = await api.post('/notes/', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
           });
           if (res.status === 200 || res.status === 201) {
             setNotes(prev => [res.data, ...prev]);
@@ -570,7 +596,7 @@ export default function MentorDashboard() {
             <select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)}
               className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
               <option value="">-- Select Course --</option>
-              {courses.map(c => <option key={c.id} value={c.title}>{c.title}</option>)}
+              {ALL_COURSES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
@@ -996,7 +1022,8 @@ export default function MentorDashboard() {
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Course *</label>
             <select value={course} onChange={(e) => setCourse(e.target.value)}
               className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
-              {courses.map(c => <option key={c.id} value={c.title}>{c.title}</option>)}
+              <option value="">-- Select Course --</option>
+              {ALL_COURSES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>

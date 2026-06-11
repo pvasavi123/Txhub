@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Notebook, Search, FileText, Download } from 'lucide-react';
+import { Notebook, Search, FileText, Eye } from 'lucide-react';
 import { AuthContext } from '../../website/context/AuthContext';
 
 const Notes = () => {
@@ -80,7 +80,7 @@ const Notes = () => {
                 {note.fileLink && (
                   <a href={note.fileLink} target="_blank" rel="noopener noreferrer" 
                     className="text-indigo-600 font-semibold text-sm hover:underline flex items-center gap-1">
-                    <Download size={14} /> Download
+                    <Eye size={14} /> View
                   </a>
                 )}
               </div>

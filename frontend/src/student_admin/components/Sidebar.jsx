@@ -28,10 +28,10 @@ const Sidebar = () => {
       <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[100] px-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <Link to="/">
-            <img 
-              src={logo1} 
-              alt="TXhub Logo" 
-              className="h-10 w-auto object-contain mix-blend-multiply brightness-110 contrast-110" 
+            <img
+              src={logo1}
+              alt="TXhub Logo"
+              className="h-10 w-auto object-contain mix-blend-multiply brightness-110 contrast-110"
             />
           </Link>
           <div className="flex flex-col">
@@ -89,10 +89,10 @@ const Sidebar = () => {
       <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 h-screen sticky top-0 p-6 shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex-col">
         <div className="flex flex-col gap-2 px-2 mb-10">
           <Link to="/" className="inline-block hover:opacity-80 transition-opacity">
-            <img 
-              src={logo1} 
-              alt="TXhub Logo" 
-              className="h-14 w-auto object-contain mix-blend-multiply brightness-110 contrast-110 self-start" 
+            <img
+              src={logo1}
+              alt="TXhub Logo"
+              className="h-14 w-auto object-contain mix-blend-multiply brightness-110 contrast-110 self-start"
             />
           </Link>
           <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] ml-1">Student Portal</span>
