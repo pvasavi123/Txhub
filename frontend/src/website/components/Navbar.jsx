@@ -90,8 +90,8 @@ const Navbar = () => {
     <div className="fixed top-0 left-0 w-full z-[100]">
       <nav
         className={`h-20 w-full flex items-center justify-between px-6 lg:px-16 transition-all duration-300 ${scrolled || isMenuOpen || !isHome
-          ? "bg-slate-900/70 backdrop-blur-xl shadow-lg border-b border-white/10"
-          : "bg-slate-900/40 backdrop-blur-md border-b border-transparent"
+          ? "bg-white shadow-lg"
+          : "bg-transparent"
           }`}
       >
         {/* LOGO */}
@@ -100,10 +100,20 @@ const Navbar = () => {
             <img
               src={logo1}
               alt="TXhub Logo"
-              className="h-16 sm:h-18 w-auto object-contain group-hover:scale-105 transition-transform duration-300 brightness-0 invert origin-left"
+              className="h-16 sm:h-18 w-auto object-contain group-hover:scale-105 transition-transform duration-300 mix-blend-multiply brightness-110 contrast-110 origin-left"
             />
           </div>
         </Link>
+
+        {/* SEARCH BAR (Hidden on mobile) */}
+        {/* <div className="hidden md:flex relative items-center w-1/3">
+          <Search className="absolute left-4 text-blue-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search courses..."
+            className="w-full bg-blue-50/50 border border-blue-100 py-2.5 pl-12 pr-4 rounded-2xl text-sm focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-300 transition-all outline-none text-slate-700"
+          />
+        </div> */}
 
         {/* ACTIONS */}
         <div className="flex items-center gap-2 sm:gap-4">
@@ -112,7 +122,7 @@ const Navbar = () => {
           <Link
             to="/blog"
             onClick={() => window.scrollTo(0, 0)}
-            className="hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-slate-200 hover:bg-white/10 hover:text-white transition-all"
+            className="hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
           >
             Blog
           </Link>
@@ -121,7 +131,7 @@ const Navbar = () => {
           <Link
             to="/contact"
             onClick={() => window.scrollTo(0, 0)}
-            className="hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-slate-200 hover:bg-white/10 hover:text-white transition-all"
+            className="hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
           >
             Contact Us
           </Link>
@@ -130,7 +140,7 @@ const Navbar = () => {
           <Link
             to="/events"
             onClick={() => window.scrollTo(0, 0)}
-            className="hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-slate-200 hover:bg-white/10 hover:text-white transition-all"
+            className="hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
           >
             Events
           </Link>
@@ -257,7 +267,7 @@ onMouseEnter={() => {
           {/* Cart */}
           <div
             onClick={() => navigate("/cart")}
-            className="relative p-2 rounded-lg text-slate-200 hover:bg-white/10 hover:text-white cursor-pointer transition-all"
+            className="relative p-2 rounded-lg text-slate-600 hover:bg-blue-50 hover:text-blue-500 cursor-pointer transition-all"
           >
             <ShoppingCart size={22} strokeWidth={2.5} />
             {cart.length > 0 && (
@@ -288,7 +298,7 @@ onMouseEnter={() => {
             ) : (
               <div className="flex items-center gap-3 relative">
                 <button
-                  onClick={() => navigate("/my-courses")}
+                  onClick={() => navigate("/student")}
                   className="hidden md:block px-5 py-2.5 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all"
                 >
                   My Courses
@@ -334,13 +344,13 @@ onMouseEnter={() => {
 
                       {/* Actions */}
                       <div className="grid gap-1">
-                        {/* <button
-                          onClick={() => { navigate("/my-courses"); setIsProfileMenuOpen(false); }}
+                        <button
+                          onClick={() => { navigate("/student"); setIsProfileMenuOpen(false); }}
                           className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-slate-600 font-bold hover:bg-blue-50 hover:text-blue-600 transition-all text-sm"
                         >
                           <LayoutGrid size={18} />
                           My Courses
-                        </button> */}
+                        </button>
                         <button
                           onClick={() => { logout(); setIsProfileMenuOpen(false); }}
                           className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-red-500 font-black hover:bg-red-50 transition-all text-sm mt-1"
@@ -359,7 +369,7 @@ onMouseEnter={() => {
           {/* MOBILE MENU TOGGLE */}
           <button
             onClick={toggleMenu}
-            className="sm:hidden p-2 text-slate-200 hover:bg-white/10 rounded-lg transition-colors"
+            className="sm:hidden p-2 text-slate-600 hover:bg-blue-50 rounded-lg transition-colors"
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -470,7 +480,7 @@ onMouseEnter={() => {
 
                 <div className="grid grid-cols-1 gap-3">
                   <button
-                    onClick={() => { navigate("/my-courses"); setIsMenuOpen(false); }}
+                    onClick={() => { navigate("/student"); setIsMenuOpen(false); }}
                     className="flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-100 text-slate-700 rounded-2xl font-black text-base shadow-sm active:scale-95 transition-all"
                   >
                     <LayoutGrid size={20} />
