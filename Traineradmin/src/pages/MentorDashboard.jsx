@@ -1060,9 +1060,14 @@ export default function MentorDashboard() {
               <div className="text-xs text-slate-500 mt-1">Submitted: {new Date(sub.submitted_at).toLocaleString()}</div>
             </div>
             {sub.fileLink ? (
-              <a href={sub.fileLink} target="_blank" rel="noopener noreferrer" className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition-colors flex items-center gap-2">
-                <Download className="w-4 h-4" /> Download
-              </a>
+              <div className="flex items-center gap-2">
+                <a href={sub.fileLink} target="_blank" rel="noopener noreferrer" className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition-colors flex items-center gap-2">
+                  <Eye className="w-4 h-4" /> View
+                </a>
+                <a href={sub.fileLink} download target="_blank" rel="noopener noreferrer" className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm shadow-indigo-200">
+                  <Download className="w-4 h-4" /> Download
+                </a>
+              </div>
             ) : (
               <span className="text-xs text-slate-400 italic">No File</span>
             )}

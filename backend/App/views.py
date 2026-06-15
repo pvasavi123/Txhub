@@ -799,6 +799,8 @@ def normalize_course(name):
     name = name.lower().strip()
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def submit_assignment(request):
     try:
         data = request.data
@@ -808,15 +810,35 @@ def submit_assignment(request):
         
         assignment = Assignment.objects.get(id=assignment_id)
         student = None
+        user = None
         if email:
             student = Student.objects.filter(email=email).first()
+            if not student:
+                user = UserRegister.objects.filter(email=email).first()
         elif student_id:
-            # Fallback in case student_id is from Student model
             student = Student.objects.filter(id=student_id).first()
             if not student:
                 user = UserRegister.objects.filter(id=student_id).first()
                 if user:
                     student = Student.objects.filter(email=user.email).first()
+
+        if not student and user:
+            # find course from enrollment
+            enr = Enrollment.objects.filter(user=user).order_by('-created_at').first()
+            course_spec = "Not Specified"
+            if enr and isinstance(enr.items, list) and len(enr.items) > 0:
+                course_spec = enr.items[0].get("title") or enr.items[0].get("name") or "Not Specified"
+
+            # Automatically create a Student record to link the submission
+            student = Student.objects.create(
+                name=user.full_name,
+                email=user.email,
+                phone=user.phone,
+                password=user.password,
+                courseSpecialization=course_spec,
+                degreeType="Not Specified",
+                passOutYear="Not Specified"
+            )
 
         if not student:
             return Response({"error": "Student not found"}, status=404)
@@ -839,6 +861,8 @@ def submit_assignment(request):
         return Response({"error": str(e)}, status=400)
 
 @api_view(['GET'])
+@authentication_classes([])
+@permission_classes([])
 def get_assignment_submissions(request):
     assignment_id = request.query_params.get('assignment_id')
     if not assignment_id:
@@ -1182,6 +1206,10 @@ def get_student_info(student_id=None, email=None):
                 batch_date = enrollment.assigned_batch.name
             elif enrollment.batch_date:
                 batch_date = enrollment.batch_date
+            # Fallback to enrollment course if Student course is empty or Not Specified
+            if student_course == "" or student_course == "Not Specified":
+                if isinstance(enrollment.items, list) and len(enrollment.items) > 0:
+                    student_course = enrollment.items[0].get("title") or enrollment.items[0].get("name") or student_course
         return student_course, batch_date
     except Student.DoesNotExist:
         pass
@@ -1289,9 +1317,16 @@ def student_assignments(request):
                 student = Student.objects.filter(email=user.email).first()
                 
     if student:
-        submitted_assignment_ids = set(AssignmentSubmission.objects.filter(student=student).values_list('assignment_id', flat=True))
+        submissions = AssignmentSubmission.objects.filter(student=student)
+        submission_dict = {sub.assignment_id: sub for sub in submissions}
         for item in data:
-            item['is_submitted'] = item['id'] in submitted_assignment_ids
+            if item['id'] in submission_dict:
+                sub = submission_dict[item['id']]
+                item['is_submitted'] = True
+                item['submission_file'] = request.build_absolute_uri(sub.fileLink.url) if sub.fileLink else None
+                item['submission_date'] = sub.submitted_at
+            else:
+                item['is_submitted'] = False
             
     return Response(data)
 

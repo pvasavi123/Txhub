@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { ClipboardList, Calendar, ExternalLink, Upload, CheckCircle } from 'lucide-react';
+import { ClipboardList, Calendar, ExternalLink, Upload, CheckCircle, Eye } from 'lucide-react';
 import { AuthContext } from '../../website/context/AuthContext';
 
 const Assignments = () => {
@@ -121,8 +121,15 @@ const Assignments = () => {
                     <ExternalLink size={16} /> Open Task
                   </a>
                 ) : assignment.is_submitted ? (
-                  <div className="px-4 py-2 bg-green-50 text-green-600 font-semibold rounded-lg text-sm whitespace-nowrap flex items-center gap-2 border border-green-100">
-                    <CheckCircle size={16} /> Submitted
+                  <div className="flex items-center gap-2">
+                    <div className="px-4 py-2 bg-green-50 text-green-600 font-semibold rounded-lg text-sm whitespace-nowrap flex items-center gap-2 border border-green-100">
+                      <CheckCircle size={16} /> Submitted
+                    </div>
+                    {assignment.submission_file && (
+                      <a href={assignment.submission_file} target="_blank" rel="noopener noreferrer" className="px-3 py-2 bg-indigo-50 text-indigo-600 font-semibold rounded-lg hover:bg-indigo-100 transition-colors text-sm flex items-center gap-2">
+                        <Eye size={16} /> View
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <button 
