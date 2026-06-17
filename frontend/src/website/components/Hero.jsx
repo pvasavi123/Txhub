@@ -111,12 +111,15 @@ const Hero = () => {
         <div className="w-full lg:w-[45%] lg:-ml-6 xl:-ml-12 pt-4 pb-2 md:pt-4 md:pb-20 pointer-events-auto">
           <div className="max-w-xl animate-in fade-in slide-in-from-left-8 duration-1000 ease-out fill-mode-both">
 
-            <h1 className="text-4xl md:text-[3.5rem] font-extrabold text-slate-900 leading-[1.1] tracking-tight">
-              Master Your Future with
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-blue-500 mt-2">
-                Expert-Led Learning
-              </span>
-            </h1>
+           <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight">
+  Master Your Future
+  <span className="block text-blue-600">
+    with Expert-Led
+  </span>
+  <span className="block text-blue-600">
+    Learning
+  </span>
+</h1>
 
             <p className="mt-6 text-slate-700 text-lg md:text-xl font-medium leading-relaxed max-w-md">
               Learn Online, Offline, or Hybrid with our interconnected comprehensive programs. Build your career network today.

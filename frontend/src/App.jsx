@@ -6,6 +6,12 @@ import StudentRoute from "./website/components/StudentRoute";
 function App() {
   const isStudentDomain = window.location.hostname.includes("student");
 
+  // Redirect admin portal pages from the main website port to the Traineradmin app port (5174)
+  if (window.location.pathname.startsWith("/admin")) {
+    window.location.href = `http://localhost:5174${window.location.pathname}${window.location.search}`;
+    return null;
+  }
+
   return (
     <Routes>
       {/* 1.5. Always prioritize the explicit /student/ path */}
