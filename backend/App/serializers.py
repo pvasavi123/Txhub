@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from App.models import UserRegister, AdminUser, Student, Enrollment, LiveClass, RecordedClass, Resource, Cart, Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, OnlineClass
+from App.models import UserRegister, AdminUser, Student, Enrollment, LiveClass, RecordedClass, Resource, Cart, Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, OnlineClass, Course
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'description', 'imageUrl', 'duration', 'slug', 'created_at']
+        read_only_fields = ['id', 'slug', 'created_at']
+
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -135,9 +142,20 @@ class UserSerializer(serializers.ModelSerializer):
         return obj.is_staff
 
 class AssignmentSerializer(serializers.ModelSerializer):
+    assigned_students_count = serializers.SerializerMethodField()
+ 
     class Meta:
         model = Assignment
         fields = '__all__'
+ 
+    def get_assigned_students_count(self, obj):
+        from .models import Enrollment
+        if obj.batch_month and obj.batch_month != 'Not Specified':
+            count = Enrollment.objects.filter(assigned_batch__name=obj.batch_month).count()
+            if count == 0:
+                count = Enrollment.objects.filter(batch_date=obj.batch_month).count()
+            return count
+        return 0
 
 class NoteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -145,6 +163,11 @@ class NoteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class StudentAttendanceSerializer(serializers.ModelSerializer):
+    student_name = serializers.ReadOnlyField(source='student.name')
+    student_email = serializers.ReadOnlyField(source='student.email')
+    batch_name = serializers.ReadOnlyField(source='batch.name')
+    mentor_name = serializers.ReadOnlyField(source='mentor.name')
+ 
     class Meta:
         model = StudentAttendance
         fields = '__all__'

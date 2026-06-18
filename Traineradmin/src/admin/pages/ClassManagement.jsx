@@ -1,323 +1,331 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Star, Users, Clock, Plus, Trash2, X, Layers, UserCheck } from 'lucide-react';
+import { BookOpen, Users, Clock, Plus, Trash2, X, RefreshCw, Image as ImageIcon, AlertCircle } from 'lucide-react';
 
-const INITIAL_COURSES = [
-  {
-    id: 'java-full-stack',
-    title: 'Java Full Stack',
-    category: 'Development',
-    students: 0,
-    batches: 0,
-    mentorAssignments: 0,
-    rating: '4.8',
-    progress: 0,
-    banner: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=600&h=300&fit=crop'
-  },
-  {
-    id: 'react-full-stack-development',
-    title: 'MERN Stack',
-    category: 'Development',
-    students: 0,
-    batches: 0,
-    mentorAssignments: 0,
-    rating: '4.9',
-    progress: 0,
-    banner: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=600&h=300&fit=crop'
-  },
-  {
-    id: 'testing',
-    title: 'Testing',
-    category: 'Testing',
-    students: 0,
-    batches: 0,
-    mentorAssignments: 0,
-    rating: '4.9',
-    progress: 0,
-    banner: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&h=300&fit=crop'
-  }
-];
+const API = 'http://127.0.0.1:8000/api';
+const FALLBACK_IMG = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&h=300&fit=crop';
 
+// Map course title → enrollment count from enrichment data
 const mapCourseId = (title) => {
   if (!title) return 'other';
   const t = title.toLowerCase();
-  if (t.includes('react') || t.includes('mern') || t.includes('mongodb')) return 'react-full-stack-development';
+  if (t.includes('react') || t.includes('mern') || t.includes('mongodb')) return 'mern-stack';
   if (t.includes('java')) return 'java-full-stack';
-  if (t.includes('testing') || t.includes('qa') || t.includes('selenium')) return 'testing';
-  return 'other';
-};
-
-const getCourseImage = (title) => {
-  const t = (title || '').toLowerCase();
-  if (t.includes('react') || t.includes('mern') || t.includes('mongodb')) {
-    return 'http://localhost:5173/src/website/assets/react_full.jpg';
-  }
-  if (t.includes('java')) {
-    return 'http://localhost:5173/src/website/assets/java_full.jpg';
-  }
-  if (t.includes('testing') || t.includes('qa') || t.includes('selenium')) {
-    return 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&q=80';
-  }
-  if (t.includes('aws') || t.includes('devops')) {
-    return 'http://localhost:5173/src/website/assets/aws.jpg';
-  }
-  if (t.includes('learning') || t.includes('ml')) {
-    return 'http://localhost:5173/src/website/assets/ml.jpg';
-  }
-  if (t.includes('ui/ux') || t.includes('figma')) {
-    return 'http://localhost:5173/src/website/assets/ui_ux.jpg';
-  }
-  if (t.includes('science')) {
-    return 'http://localhost:5173/src/website/assets/dataScience.jpg';
-  }
-  if (t.includes('analytics')) {
-    return 'http://localhost:5173/src/website/assets/Data%20Analytics.jpg';
-  }
-  if (t.includes('python')) {
-    return 'http://localhost:5173/src/website/assets/python%20full%20stack.jpg';
-  }
-  return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80';
+  if (t.includes('testing') || t.includes('qa') || t.includes('selenium') || t.includes('software testing')) return 'software-testing';
+  if (t.includes('python')) return 'python-development';
+  if (t.includes('ui') || t.includes('ux') || t.includes('design')) return 'ui-ux-design';
+  if (t.includes('devops') || t.includes('aws') || t.includes('docker')) return 'devops';
+  if (t.includes('ai') || t.includes('ml') || t.includes('machine')) return 'ai-ml';
+  if (t.includes('data science')) return 'data-science';
+  return t.replace(/[^a-z0-9]/g, '-');
 };
 
 const ClassManagement = () => {
   const navigate = useNavigate();
-  const [courses, setCourses] = useState(INITIAL_COURSES);
-  const [selectedCourse, setSelectedCourse] = useState(null); // Course for modal display
+  const [courses, setCourses] = useState([]);
+  const [enrollCounts, setEnrollCounts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const fetchCourseData = async () => {
+  // Add Course Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [form, setForm] = useState({ title: '', description: '', imageUrl: '', duration: '12 Weeks' });
+
+  // ── Fetch courses from DB ──────────────────────────────────────────
+  const fetchCourses = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [enrollRes, batchRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/enrollments/'),
-        fetch('http://127.0.0.1:8000/api/batches/')
+      const [courseRes, enrollRes] = await Promise.all([
+        fetch(`${API}/courses-list/`),
+        fetch(`${API}/enrollments/`),
       ]);
-
+      const courseData = await courseRes.json();
       const enrollResult = await enrollRes.json();
       const enrollData = Array.isArray(enrollResult) ? enrollResult : enrollResult.data || [];
-      const batchesData = await batchRes.json();
 
-      setCourses(prevCourses => {
-        return prevCourses.map(course => {
-          // Filter enrollments for this course
-          const courseEnrollments = enrollData.filter(e => {
-            const courseId = mapCourseId(e.title || (e.items && e.items[0]?.title));
-            return courseId === course.id;
-          });
-
-          // Filter batches for this course
-          const courseBatches = batchesData.filter(b => {
-            const courseId = mapCourseId(b.course);
-            return courseId === course.id;
-          });
-
-          // Calculate mentor assignments
-          const mentorAssignments = courseEnrollments.filter(e => e.assigned_mentor !== null).length;
-
-          // Calculate average progress (amount_paid / total_fee) * 100
-          let totalProgress = 0;
-          let studentsWithFee = 0;
-          courseEnrollments.forEach(e => {
-            const totalFee = parseFloat(e.total_fee) || 0;
-            const paid = parseFloat(e.amount_paid) || 0;
-            if (totalFee > 0) {
-              totalProgress += (paid / totalFee) * 100;
-              studentsWithFee++;
-            }
-          });
-          const avgProgress = studentsWithFee > 0 ? Math.round(totalProgress / studentsWithFee) : 0;
-
-          return {
-            ...course,
-            students: courseEnrollments.length,
-            batches: courseBatches.length,
-            mentorAssignments,
-            progress: avgProgress,
-            banner: getCourseImage(course.title)
-          };
-        });
-      });
+      // Build enrollment count map keyed by normalized course slug
+      const counts = {};
+      for (const e of enrollData) {
+        const key = mapCourseId(e.title || (e.items && e.items[0]?.title));
+        counts[key] = (counts[key] || 0) + 1;
+      }
+      setEnrollCounts(counts);
+      setCourses(Array.isArray(courseData) ? courseData : []);
     } catch (err) {
-      console.error("Error fetching course metrics:", err);
+      console.error('Error fetching courses:', err);
+      setError('Failed to load courses. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchCourseData();
   }, []);
 
-  const handleDelete = (id, title) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+  useEffect(() => { fetchCourses(); }, [fetchCourses]);
+
+  // ── Delete course ─────────────────────────────────────────────────
+  const handleDelete = async (id, title) => {
+    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    try {
+      await fetch(`${API}/courses-list/${id}/`, { method: 'DELETE' });
       setCourses(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      alert('Failed to delete course.');
     }
   };
 
-  const handleAddCourse = () => {
-    const title = prompt("Enter course title:");
-    if (!title) return;
-    const newCourse = {
-      id: title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-      title,
-      category: 'General',
-      students: 0,
-      batches: 0,
-      mentorAssignments: 0,
-      rating: '5.0',
-      progress: 0,
-      banner: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&h=300&fit=crop'
-    };
-    setCourses(prev => [...prev, newCourse]);
+  // ── Add Course ────────────────────────────────────────────────────
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!form.title.trim()) { setFormError('Course title is required.'); return; }
+    setSaving(true);
+    setFormError('');
+    try {
+      const res = await fetch(`${API}/courses-list/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title.trim(),
+          description: form.description.trim(),
+          imageUrl: form.imageUrl.trim() || FALLBACK_IMG,
+          duration: form.duration.trim() || '12 Weeks',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFormError(data.title?.[0] || data.detail || JSON.stringify(data));
+        return;
+      }
+      setCourses(prev => [data, ...prev]);
+      setShowModal(false);
+      setForm({ title: '', description: '', imageUrl: '', duration: '12 Weeks' });
+    } catch (err) {
+      setFormError('Failed to save course. Check connection.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const studentCount = (course) => {
+    const key = mapCourseId(course.title);
+    return enrollCounts[key] || 0;
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 lg:px-8 pt-6 relative">
-      
-      {/* Header with Title and New Course Button */}
+
+      {/* ── Header ── */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-slate-800">My Courses</h2>
-        <button 
-          onClick={handleAddCourse}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-95"
-        >
-          <Plus size={16} /> New Course
-        </button>
-      </div>
-
-      {/* Courses Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
-        {courses.map((course) => (
-          <div
-            key={course.id}
-            className="bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col group"
+        <div className="flex gap-2">
+          <button
+            onClick={fetchCourses}
+            className="p-2.5 border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 rounded-xl transition-colors"
+            title="Refresh"
           >
-            {/* Banner Image with dark gradient and text alignment */}
-            <div className="h-44 overflow-hidden relative">
-              <img
-                src={course.banner}
-                alt={course.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
-              
-              {/* Course Title aligned to bottom-left */}
-              <div className="absolute bottom-4 left-4 text-white space-y-1.5">
-                <h4 className="font-bold text-lg leading-tight drop-shadow-sm">
-                  {course.title}
-                </h4>
-              </div>
-            </div>
-
-            {/* Bottom Content Area */}
-            <div className="p-5 space-y-4">
-              
-              {/* Students Count and Progress Percentage */}
-              <div className="flex justify-between text-xs text-slate-500 font-bold">
-                <span className="flex items-center gap-1">
-                  <Users size={14} className="text-slate-400" /> {course.students} Students
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock size={14} className="text-slate-400" /> {course.progress}%
-                </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500" 
-                  style={{ width: `${course.progress}%` }} 
-                />
-              </div>
-
-              {/* Action Buttons: Manage (Full width) and Trash icon */}
-              <div className="flex gap-3 pt-1">
-                <button 
-                  onClick={() => navigate(`/admin/courses/${course.id}/progress`)}
-                  className="flex-1 py-2.5 bg-indigo-50 hover:bg-indigo-100/80 text-indigo-600 rounded-xl text-xs font-black tracking-wide uppercase transition-colors active:scale-95 text-center"
-                >
-                  Manage
-                </button>
-                <button 
-                  onClick={() => handleDelete(course.id, course.title)}
-                  className="px-3 py-2.5 border border-rose-100 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors active:scale-95 flex items-center justify-center shrink-0" 
-                  title="Delete Course"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-
-            </div>
-          </div>
-        ))}
+            <RefreshCw size={15} />
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-95"
+          >
+            <Plus size={16} /> New Course
+          </button>
+        </div>
       </div>
 
-      {/* ── COURSE DETAILS MODAL ── */}
-      {selectedCourse && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100/80 animate-in zoom-in-95 duration-200">
-            
-            {/* Modal Header */}
+      {/* ── Loading ── */}
+      {loading && (
+        <div className="py-20 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* ── Error ── */}
+      {!loading && error && (
+        <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-sm">
+          <AlertCircle size={18} className="shrink-0" />
+          {error}
+          <button onClick={fetchCourses} className="ml-auto text-xs font-bold underline">Retry</button>
+        </div>
+      )}
+
+      {/* ── Empty ── */}
+      {!loading && !error && courses.length === 0 && (
+        <div className="py-20 text-center">
+          <BookOpen size={40} className="mx-auto text-slate-300 mb-3" />
+          <p className="text-slate-500 font-semibold">No courses yet. Create your first course.</p>
+        </div>
+      )}
+
+      {/* ── Courses Grid ── */}
+      {!loading && !error && courses.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+          {courses.map((course) => {
+            const imgSrc = course.imageUrl || FALLBACK_IMG;
+            const count = studentCount(course);
+            return (
+              <div
+                key={course.id}
+                className="bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col group"
+              >
+                {/* Banner */}
+                <div className="h-44 overflow-hidden relative">
+                  <img
+                    src={imgSrc}
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={e => { e.target.src = FALLBACK_IMG; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <h4 className="font-bold text-lg leading-tight drop-shadow-sm">{course.title}</h4>
+                    {course.duration && (
+                      <span className="text-xs text-white/70 flex items-center gap-1 mt-0.5">
+                        <Clock size={11} /> {course.duration}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-5 space-y-4 flex-1 flex flex-col">
+                  {course.description && (
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{course.description}</p>
+                  )}
+
+                  <div className="flex justify-between text-xs text-slate-500 font-bold">
+                    <span className="flex items-center gap-1">
+                      <Users size={14} className="text-slate-400" /> {count} Students
+                    </span>
+                  </div>
+
+                  <div className="flex gap-3 mt-auto pt-1">
+                    <button
+                      onClick={() => navigate(`/admin/courses/${course.slug}/progress`)}
+                      className="flex-1 py-2.5 bg-indigo-50 hover:bg-indigo-100/80 text-indigo-600 rounded-xl text-xs font-black tracking-wide uppercase transition-colors active:scale-95 text-center"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleDelete(course.id, course.title)}
+                      className="px-3 py-2.5 border border-rose-100 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors active:scale-95 flex items-center justify-center shrink-0"
+                      title="Delete Course"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Add Course Modal ── */}
+      {showModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md border border-slate-100">
             <div className="flex justify-between items-center p-6 border-b border-slate-100">
-              <h3 className="font-bold text-lg text-slate-800">Course Details</h3>
-              <button 
-                onClick={() => setSelectedCourse(null)} 
+              <h3 className="font-bold text-lg text-slate-800">Add New Course</h3>
+              <button
+                onClick={() => { setShowModal(false); setFormError(''); }}
                 className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
-            
-            {/* Modal Body */}
-            <div className="p-6 space-y-6">
-              {/* Rounded Course Image */}
-              <div className="h-44 w-full rounded-2xl overflow-hidden shadow-sm">
-                <img 
-                  src={selectedCourse.banner} 
-                  alt={selectedCourse.title} 
-                  className="w-full h-full object-cover" 
+
+            <form onSubmit={handleAdd} className="p-6 space-y-4">
+              {formError && (
+                <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600 flex items-center gap-2">
+                  <AlertCircle size={14} className="shrink-0" /> {formError}
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">
+                  Course Title *
+                </label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="e.g. React Full Stack Development"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  required
                 />
               </div>
-              
-              {/* Course Title */}
-              <h2 className="text-xl font-black text-slate-800 tracking-tight leading-none">
-                {selectedCourse.title}
-              </h2>
-              
-              {/* Stats row inside rounded grey/blue containers */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div className="bg-slate-50 border border-slate-100/50 rounded-2xl p-3">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Students</p>
-                  <p className="text-lg font-black text-slate-700 mt-1">{selectedCourse.students}</p>
-                </div>
-                <div className="bg-slate-50 border border-slate-100/50 rounded-2xl p-3">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Batches</p>
-                  <p className="text-lg font-black text-slate-700 mt-1">{selectedCourse.batches}</p>
-                </div>
-                <div className="bg-slate-50 border border-slate-100/50 rounded-2xl p-3">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Mentors</p>
-                  <p className="text-lg font-black text-slate-700 mt-1">{selectedCourse.mentorAssignments}</p>
-                </div>
-                <div className="bg-slate-50 border border-slate-100/50 rounded-2xl p-3">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Progress</p>
-                  <p className="text-lg font-black text-slate-700 mt-1">{selectedCourse.progress}%</p>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">
+                  Description
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Brief course description..."
+                  rows={3}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">
+                  Banner Image URL
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={form.imageUrl}
+                    onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
+                    placeholder="https://..."
+                    className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  />
+                  <div className="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center bg-slate-50 shrink-0">
+                    {form.imageUrl ? (
+                      <img src={form.imageUrl} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                    ) : (
+                      <ImageIcon size={18} className="text-slate-300" />
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Modal Footer */}
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-              <button 
-                onClick={() => navigate(`/admin/courses/${selectedCourse.id}`)}
-                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider text-center transition-colors active:scale-95 shadow-md"
-              >
-                Open Course Dashboard
-              </button>
-            </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">
+                  Duration
+                </label>
+                <input
+                  type="text"
+                  value={form.duration}
+                  onChange={e => setForm(f => ({ ...f, duration: e.target.value }))}
+                  placeholder="e.g. 12 Weeks"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowModal(false); setFormError(''); }}
+                  className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-60 shadow-md"
+                >
+                  {saving ? 'Saving…' : 'Save Course'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
-
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserPlus, Settings,
-  LogOut, Menu, X, Bell, ChevronRight, Video, Layers, UserCheck, BookOpen, Award
+  LogOut, Menu, X, Bell, ChevronRight, Video, Layers, UserCheck, BookOpen, Award, ClipboardList
 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 
@@ -24,6 +24,7 @@ const Sidebar = () => {
     { name: 'Mentors', path: '/admin/mentors', icon: <UserCheck size={22} /> },
     { name: 'Courses', path: '/admin/courses', icon: <BookOpen size={22} /> },
     { name: 'Certifications', path: '/admin/certifications', icon: <Award size={22} /> },
+    { name: 'Attendance', path: '/admin/attendance', icon: <ClipboardList size={22} /> },
   ];
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);

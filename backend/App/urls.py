@@ -49,6 +49,8 @@ urlpatterns = [
     path('student/assignments/submit/', views.submit_assignment),
     path('assignments/submissions/', views.get_assignment_submissions),
     path('courses/<str:course_id>/progress/', views.get_course_progress),
+    path('courses-list/', views.manage_courses),
+    path('courses-list/<int:pk>/', views.delete_course),
 ]
 
 from rest_framework.routers import DefaultRouter

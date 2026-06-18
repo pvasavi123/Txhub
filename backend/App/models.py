@@ -1,5 +1,31 @@
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password as django_check_password
+from django.utils.text import slugify
+
+class Course(models.Model):
+    """Admin-managed course catalog. Persisted in DB."""
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, default='')
+    imageUrl = models.URLField(max_length=500, blank=True, default='')
+    duration = models.CharField(max_length=50, blank=True, default='90 days')
+    slug = models.SlugField(max_length=200, unique=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.title)
+            slug = base
+            n = 1
+            while Course.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{n}"
+                n += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
 
 class UserRegister(models.Model):
     full_name = models.CharField(max_length=200)
@@ -334,6 +360,12 @@ class Assignment(models.Model):
     course = models.CharField(max_length=100)
     batch_month = models.CharField(max_length=100, blank=True, default='')  # e.g. 'June Batch'
     dueDate = models.DateField(null=True, blank=True)
+    fileLink = models.FileField(
+        upload_to='assignments/',
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx'])]
+    )
     trainer = models.ForeignKey('Trainer', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 class Note(models.Model):
@@ -344,14 +376,19 @@ class Note(models.Model):
     fileLink = models.FileField(upload_to='notes/', blank=True, null=True)
     trainer = models.ForeignKey('Trainer', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
 class StudentAttendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    date = models.DateField()
-    status = models.CharField(max_length=20, default='present')
-    course = models.CharField(max_length=100)
+    batch = models.ForeignKey('Batch', on_delete=models.CASCADE, null=True, blank=True)
+    mentor = models.ForeignKey('Trainer', on_delete=models.SET_NULL, null=True, blank=True)
+    attendance_date = models.DateField()
+    status = models.CharField(max_length=20, default='Absent')
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+   
     class Meta:
-        unique_together = ('student', 'date', 'course')
+        unique_together = ('student', 'attendance_date', 'batch')
+ 
 
 class Batch(models.Model):
     name = models.CharField(max_length=100)

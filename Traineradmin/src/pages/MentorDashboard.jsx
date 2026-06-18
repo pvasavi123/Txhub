@@ -6,7 +6,7 @@ import {
   TrendingUp, Award, Clock, Search, MoreVertical, Plus, FileText, Download,
   GraduationCap, Calendar, Bell, X, Upload, Trash2, Eye, Edit3, Check,
   ChevronDown, AlertCircle, Star, Paperclip, LogOut, Layers, ChevronLeft,
-  Video, Radio, StopCircle, History, UserCheck
+  Video, Radio, StopCircle, History, UserCheck, ChevronRight
 } from 'lucide-react';
 import api from '../api/client';
 
@@ -112,6 +112,7 @@ const TABS = [
   { id: 'students', label: 'Students', icon: Users },
   { id: 'batches', label: 'Batches', icon: Layers },
   { id: 'online-classes', label: 'Online Classes', icon: Video },
+  { id: 'attendance', label: 'Attendance', icon: UserCheck },
 ];
 
 const COURSE_IMAGES = {
@@ -736,9 +737,9 @@ export default function MentorDashboard() {
 
 
   // ═══════════════════════════════════════════
-  //  ATTENDANCE TAB
+  //  ATTENDANCE TAB (BATCH SPECIFIC)
   // ═══════════════════════════════════════════
-  const AttendanceTab = () => {
+  const BatchAttendanceTab = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const presentCount = Object.values(attendance).filter(Boolean).length;
     const filteredStudents = students.filter(s => {
@@ -794,9 +795,10 @@ export default function MentorDashboard() {
             <button onClick={async () => {
               const records = Object.keys(attendance).map(id => ({
                 student: parseInt(id),
-                date: new Date().toISOString().split('T')[0],
-                status: attendance[id] ? 'present' : 'absent',
-                course: students.find(s => s.id == id)?.course || 'Unknown'
+                attendance_date: new Date().toISOString().split('T')[0],
+                status: attendance[id] ? 'Present' : 'Absent',
+                batch: selectedBatchId ? parseInt(selectedBatchId) : null,
+                mentor: trainerData?.id || null
               }));
               try {
                 const res = await api.post('/attendance/', records);
@@ -964,24 +966,37 @@ export default function MentorDashboard() {
           <div key={a.id} className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-md transition-all">
             <div className="flex justify-between items-start mb-4">
               <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${a.status === 'Active' ? 'bg-green-100 text-green-700' : a.status === 'Closed' ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-700'
-                }`}>{a.status}</span>
-              <button onClick={() => { setAssignments(prev => prev.filter(x => x.id !== a.id)); showToast(`Deleted "${a.title}"`); }}
+                }`}>{a.status || 'Active'}</span>
+              <button onClick={async () => {
+                try {
+                  await api.delete(`/assignments/${a.id}/`);
+                  setAssignments(prev => prev.filter(x => x.id !== a.id)); showToast(`Deleted "${a.title}"`);
+                } catch { showToast('Delete failed', 'error'); }
+              }}
                 className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
             </div>
             <h4 className="font-bold text-slate-800 mb-1">{a.title}</h4>
-            <p className="text-xs text-slate-500 mb-4">{a.course} · Due: {a.dueDate}</p>
-            <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-500 mb-2">{a.course} {a.batch_month && `· ${a.batch_month}`} · Due: {a.dueDate}</p>
+            {a.fileLink && (
+              <div className="flex items-center gap-3 mb-3">
+                <a href={a.fileLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition-colors border border-indigo-100">
+                  <Eye className="w-3 h-3 flex-shrink-0" /> View Document
+                </a>
+                <a href={a.fileLink} download target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition-colors border border-slate-200">
+                  <Download className="w-3 h-3 flex-shrink-0" /> Download
+                </a>
+              </div>
+            )}
+            <p className="text-xs text-slate-400 mb-4 flex items-center gap-1">
+               <Clock className="w-3 h-3"/> Uploaded: {new Date(a.created_at).toLocaleDateString()}
+            </p>
+            <div className="flex items-center justify-between border-t border-slate-100 pt-4">
               <div>
-                <div className="text-xs text-slate-400 mb-1">Submissions</div>
-                <div className="flex items-center gap-2">
-                  <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(a.submissions / a.total) * 100}%` }} />
-                  </div>
-                  <span className="text-xs font-bold text-slate-600">{a.submissions}/{a.total}</span>
-                </div>
+                <div className="text-xs text-slate-400 mb-1">Assigned Students</div>
+                <div className="text-sm font-bold text-slate-600">{a.assigned_students_count || 0}</div>
               </div>
               <button onClick={() => setShowAssignmentSubmissions(a)} className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1">
-                <Eye className="w-3 h-3" /> View
+                <Eye className="w-3 h-3" /> View Submissions
               </button>
             </div>
           </div>
@@ -1078,22 +1093,36 @@ export default function MentorDashboard() {
   // ═══════════════════════════════════════════
   const NewAssignmentForm = () => {
     const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
     const [course, setCourse] = useState(trainerData?.assigned_course || '');
     const [batch, setBatch] = useState(selectedBatchId ? batches.find(b => b.id === selectedBatchId)?.name || '' : '');
     const [dueDate, setDueDate] = useState('');
+    const [file, setFile] = useState(null);
 
     const handleSubmit = async (e) => {
       e.preventDefault();
       if (!title.trim() || !dueDate) { showToast('Please fill all fields', 'error'); return; }
 
       try {
-        const res = await api.post('/assignments/', {
-          title: title.trim(),
-          course,
-          batch_month: batch,
-          dueDate,
-          trainer: trainerData?.id || null,
+        const formData = new FormData();
+        formData.append('title', title.trim());
+        formData.append('description', description.trim());
+        formData.append('course', course);
+        formData.append('batch_month', batch);
+        formData.append('dueDate', dueDate);
+        if (trainerData?.id) {
+          formData.append('trainer', trainerData.id);
+        }
+        if (file) {
+          formData.append('fileLink', file);
+        }
+
+        const res = await api.post('/assignments/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         });
+
         if (res.status === 200 || res.status === 201) {
           const newAssign = res.data;
           setAssignments(prev => [newAssign, ...prev]);
@@ -1110,10 +1139,15 @@ export default function MentorDashboard() {
     };
 
     return (
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Assignment Title *</label>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Build a REST API"
+            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Description</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Assignment details..." rows={3}
             className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -1136,10 +1170,17 @@ export default function MentorDashboard() {
             </select>
           </div>
         </div>
-        <div>
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Due Date *</label>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Due Date *</label>
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Assignment File</label>
+            <input type="file" onChange={(e) => setFile(e.target.files[0])} accept=".pdf,.doc,.docx"
+              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+          </div>
         </div>
         <button type="submit" className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-colors active:scale-95">
           Create Assignment
@@ -1218,7 +1259,7 @@ export default function MentorDashboard() {
         <div className="mt-6">
           <AnimatePresence mode="wait">
             {batchActiveTab === 'notes' && <NotesTab key="notes" />}
-            {batchActiveTab === 'attendance' && <AttendanceTab key="attendance" />}
+            {batchActiveTab === 'attendance' && <BatchAttendanceTab key="attendance" />}
             {batchActiveTab === 'assignments' && <AssignmentsTab key="assignments" />}
           </AnimatePresence>
         </div>
@@ -1450,6 +1491,318 @@ export default function MentorDashboard() {
   };
 
   // ═══════════════════════════════════════════
+  //  ATTENDANCE TAB
+  // ═══════════════════════════════════════════
+  const AttendanceTab = () => {
+    const [attView, setAttView] = useState('create'); // 'create' | 'history'
+    const [attBatchId, setAttBatchId] = useState('');
+    const [attDate, setAttDate] = useState(new Date().toISOString().split('T')[0]);
+    const [batchStudents, setBatchStudents] = useState([]);
+    const [attMap, setAttMap] = useState({}); // { studentId: 'Present'|'Absent' }
+    const [loadingStudents, setLoadingStudents] = useState(false);
+    const [savingAtt, setSavingAtt] = useState(false);
+    const [history, setHistory] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [expandedGroup, setExpandedGroup] = useState(null);
+    const [groupDetails, setGroupDetails] = useState({});
+
+    // Fetch students for selected batch
+    useEffect(() => {
+      if (!attBatchId) { setBatchStudents([]); return; }
+      setLoadingStudents(true);
+      api.get('/batches/', { params: trainerData ? { trainer_id: trainerData.id } : {} })
+        .then(res => {
+          const batch = (res.data || []).find(b => String(b.id) === String(attBatchId));
+          const students = batch?.students || [];
+          setBatchStudents(students);
+          // Default all to Absent
+          const defaultMap = {};
+          students.forEach(s => { defaultMap[s.id] = 'Absent'; });
+          setAttMap(defaultMap);
+        })
+        .catch(() => setBatchStudents([]))
+        .finally(() => setLoadingStudents(false));
+    }, [attBatchId]);
+
+    // Fetch history
+    const fetchHistory = () => {
+      setLoadingHistory(true);
+      const params = {};
+      if (trainerData?.id) params.mentor_id = trainerData.id;
+      api.get('/attendance/', { params })
+        .then(res => {
+          const records = res.data || [];
+          // Group by date + batch
+          const grouped = {};
+          records.forEach(r => {
+            const key = `${r.attendance_date}__${r.batch}`;
+            if (!grouped[key]) {
+              grouped[key] = {
+                date: r.attendance_date,
+                batch_id: r.batch,
+                batch_name: r.batch_name || `Batch #${r.batch}`,
+                records: []
+              };
+            }
+            grouped[key].records.push(r);
+          });
+          setHistory(Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date)));
+        })
+        .catch(() => setHistory([]))
+        .finally(() => setLoadingHistory(false));
+    };
+
+    useEffect(() => {
+      if (attView === 'history') fetchHistory();
+    }, [attView]);
+
+    const handleSave = async () => {
+      if (!attBatchId || !attDate || batchStudents.length === 0) {
+        showToast('Select a batch and date first', 'error');
+        return;
+      }
+      setSavingAtt(true);
+      const payload = batchStudents.map(s => ({
+        student: s.id,
+        attendance_date: attDate,
+        batch: parseInt(attBatchId),
+        mentor: trainerData?.id || null,
+        status: attMap[s.id] || 'Absent'
+      }));
+      try {
+        await api.post('/attendance/', payload);
+        showToast('Attendance saved successfully!', 'success');
+      } catch (err) {
+        showToast('Failed to save attendance', 'error');
+      } finally {
+        setSavingAtt(false);
+      }
+    };
+
+    const toggleDetail = (key) => {
+      setExpandedGroup(prev => prev === key ? null : key);
+    };
+
+    const selectedBatch = batches.find(b => String(b.id) === String(attBatchId));
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+        {/* Sub-nav */}
+        <div className="flex gap-2">
+          {[{ id: 'create', label: 'Mark Attendance', icon: UserCheck }, { id: 'history', label: 'View History', icon: History }].map(v => (
+            <button key={v.id} onClick={() => setAttView(v.id)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all ${
+                attView === v.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
+              }`}>
+              <v.icon className="w-4 h-4" />{v.label}
+            </button>
+          ))}
+        </div>
+
+        {attView === 'create' && (
+          <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2"><UserCheck className="w-5 h-5 text-indigo-600" /> Mark Attendance</h3>
+              <p className="text-sm text-slate-500 mt-1">Select a batch and date, then mark Present / Absent for each student.</p>
+            </div>
+            <div className="p-6 space-y-5">
+              {/* Batch + Date selectors */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Select Batch</label>
+                  <select value={attBatchId} onChange={e => setAttBatchId(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400">
+                    <option value="">-- Choose Batch --</option>
+                    {batches.map(b => <option key={b.id} value={b.id}>{b.name} {b.course ? `(${b.course})` : ''}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Attendance Date</label>
+                  <input type="date" value={attDate} onChange={e => setAttDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" />
+                </div>
+              </div>
+
+              {/* Student Table */}
+              {!attBatchId && (
+                <div className="text-center py-12 text-slate-400">
+                  <UserCheck className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">Select a batch to load students</p>
+                </div>
+              )}
+              {attBatchId && loadingStudents && (
+                <div className="flex items-center justify-center py-12 gap-3 text-indigo-600">
+                  <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  Loading students...
+                </div>
+              )}
+              {attBatchId && !loadingStudents && batchStudents.length === 0 && (
+                <div className="text-center py-12 text-slate-400">
+                  <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">No students found in this batch</p>
+                </div>
+              )}
+              {attBatchId && !loadingStudents && batchStudents.length > 0 && (
+                <div>
+                  {/* Quick actions */}
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-sm font-semibold text-slate-600">{batchStudents.length} student(s) in {selectedBatch?.name}</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => { const m = {}; batchStudents.forEach(s => { m[s.id] = 'Present'; }); setAttMap(m); }}
+                        className="px-3 py-1.5 text-xs font-bold bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition-colors">✓ All Present</button>
+                      <button onClick={() => { const m = {}; batchStudents.forEach(s => { m[s.id] = 'Absent'; }); setAttMap(m); }}
+                        className="px-3 py-1.5 text-xs font-bold bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors">✗ All Absent</button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {batchStudents.map((student, idx) => {
+                      const isPresent = attMap[student.id] === 'Present';
+                      return (
+                        <div key={student.id}
+                          className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                            isPresent ? 'bg-green-50 border-green-200' : 'bg-red-50/50 border-red-100'
+                          }`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${
+                              isPresent ? 'bg-green-200 text-green-800' : 'bg-slate-200 text-slate-600'
+                            }`}>{(student.name || '?').charAt(0).toUpperCase()}</div>
+                            <div>
+                              <p className="font-semibold text-sm text-slate-800">{student.name}</p>
+                              <p className="text-xs text-slate-400">{student.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setAttMap(prev => ({ ...prev, [student.id]: 'Absent' }))}
+                              className={`px-4 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                                !isPresent ? 'bg-red-500 text-white border-red-500 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:border-red-300'
+                              }`}>Absent</button>
+                            <button onClick={() => setAttMap(prev => ({ ...prev, [student.id]: 'Present' }))}
+                              className={`px-4 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                                isPresent ? 'bg-green-500 text-white border-green-500 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:border-green-300'
+                              }`}>Present</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Summary + Save */}
+                  <div className="mt-6 p-4 bg-indigo-50 rounded-2xl flex items-center justify-between">
+                    <div className="flex gap-4 text-sm">
+                      <span className="font-bold text-green-700">{Object.values(attMap).filter(v => v === 'Present').length} Present</span>
+                      <span className="font-bold text-red-600">{Object.values(attMap).filter(v => v === 'Absent').length} Absent</span>
+                      <span className="text-slate-500">/ {batchStudents.length} Total</span>
+                    </div>
+                    <button onClick={handleSave} disabled={savingAtt}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-60">
+                      {savingAtt ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
+                      Save Records
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {attView === 'history' && (
+          <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2"><History className="w-5 h-5 text-indigo-600" /> Attendance History</h3>
+                <p className="text-sm text-slate-500 mt-1">Grouped by date and batch</p>
+              </div>
+              <button onClick={fetchHistory} className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-500 transition-colors" title="Refresh">
+                <History className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6">
+              {loadingHistory && (
+                <div className="flex items-center justify-center py-12 gap-3 text-indigo-600">
+                  <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  Loading history...
+                </div>
+              )}
+              {!loadingHistory && history.length === 0 && (
+                <div className="text-center py-12 text-slate-400">
+                  <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">No attendance records found</p>
+                </div>
+              )}
+              {!loadingHistory && history.length > 0 && (
+                <div className="space-y-3">
+                  {history.map((group, idx) => {
+                    const key = `${group.date}__${group.batch_id}`;
+                    const presentCount = group.records.filter(r => r.status === 'Present').length;
+                    const absentCount = group.records.filter(r => r.status === 'Absent').length;
+                    const total = group.records.length;
+                    const isExpanded = expandedGroup === key;
+                    return (
+                      <div key={key} className="border border-slate-100 rounded-2xl overflow-hidden">
+                        <div className="flex items-center justify-between p-4 bg-slate-50/80 hover:bg-slate-100/80 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 bg-indigo-100 rounded-xl">
+                              <Calendar className="w-4 h-4 text-indigo-600" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm text-slate-800">{group.date}</p>
+                              <p className="text-xs text-slate-500">{group.batch_name}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex gap-3 text-xs font-bold">
+                              <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg">{presentCount} Present</span>
+                              <span className="px-2 py-1 bg-red-100 text-red-600 rounded-lg">{absentCount} Absent</span>
+                              <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg">{total} Total</span>
+                            </div>
+                            <button onClick={() => toggleDetail(key)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors">
+                              {isExpanded ? 'Hide' : 'View'}
+                              <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            </button>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="p-4 border-t border-slate-100">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-xs font-bold text-slate-400 uppercase border-b border-slate-100">
+                                  <th className="pb-2">#</th>
+                                  <th className="pb-2">Student</th>
+                                  <th className="pb-2">Email</th>
+                                  <th className="pb-2">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.records.map((r, i) => (
+                                  <tr key={r.id} className="border-b border-slate-50 last:border-0">
+                                    <td className="py-2.5 text-slate-400 text-xs">{i + 1}</td>
+                                    <td className="py-2.5 font-semibold text-slate-700">{r.student_name || `Student #${r.student}`}</td>
+                                    <td className="py-2.5 text-slate-400 text-xs">{r.student_email || '—'}</td>
+                                    <td className="py-2.5">
+                                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                        r.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                                      }`}>{r.status}</span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    );
+  };
+
+  // ═══════════════════════════════════════════
   //  RENDER
   // ═══════════════════════════════════════════
   return (
@@ -1510,6 +1863,7 @@ export default function MentorDashboard() {
           {activeTab === 'courses' && <CoursesTab key="courses" />}
           {activeTab === 'batches' && <BatchesTab key="batches" />}
           {activeTab === 'online-classes' && <OnlineClassesTab key="online-classes" />}
+          {activeTab === 'attendance' && <AttendanceTab key="attendance" />}
         </AnimatePresence>
       </div>
 

@@ -4,27 +4,28 @@ from django.db.models import Sum
 from django.core.cache import cache
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
-
+ 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-
+ 
 from google.oauth2 import id_token
 from google.auth.transport import requests
-
+ 
 import os
 import random
-
+ 
 from App.models import (
-    UserRegister, AdminUser, Student, Enrollment, 
+    UserRegister, AdminUser, Student, Enrollment,
     LiveClass, RecordedClass, Resource, Cart,
-    Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission
+    Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, Course
 )
 from App.serializers import (
-    UserRegisterSerializer, StudentSerializer, EnrollmentSerializer, 
+    UserRegisterSerializer, StudentSerializer, EnrollmentSerializer,
     LiveClassSerializer, RecordedClassSerializer, ResourceSerializer, CartSerializer,
     AssignmentSerializer, NoteSerializer, StudentAttendanceSerializer,
-    TrainerSerializer, TrainerLoginSerializer, BatchSerializer, AssignmentSubmissionSerializer
+    TrainerSerializer, TrainerLoginSerializer, BatchSerializer, AssignmentSubmissionSerializer,
+    CourseSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
@@ -954,7 +955,7 @@ def get_assignment_submissions(request):
         return Response({"error": "assignment_id required"}, status=400)
         
     submissions = AssignmentSubmission.objects.filter(assignment_id=assignment_id).order_by('-submitted_at')
-    serializer = AssignmentSubmissionSerializer(submissions, many=True)
+    serializer = AssignmentSubmissionSerializer(submissions, many=True, context={'request': request})
     return Response(serializer.data, status=200)
  
     if "all courses" in name:
@@ -1171,7 +1172,7 @@ def manage_assignments(request):
             assignments = assignments.filter(course__icontains=course)
             
         assignments = assignments.order_by('-created_at')
-        serializer = AssignmentSerializer(assignments, many=True)
+        serializer = AssignmentSerializer(assignments, many=True, context={'request': request})
         return Response(serializer.data)
     
     elif request.method == 'POST':
@@ -1230,63 +1231,73 @@ def delete_note(request, pk):
         return Response({"message": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
     except Note.DoesNotExist:
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+    
 @api_view(['GET', 'POST'])
 @authentication_classes([])
 @permission_classes([])
 def manage_attendance(request):
     if request.method == 'GET':
-        course = request.query_params.get('course')
+        mentor_id = request.query_params.get('mentor_id')
+        batch_id = request.query_params.get('batch_id')
         date = request.query_params.get('date')
-        if not date:
-            return Response({"error": "Date is required"}, status=400)
-        
-        query = StudentAttendance.objects.filter(date=date)
-        if course and course != 'All Courses':
-            query = query.filter(course=course)
-            
-        serializer = StudentAttendanceSerializer(query, many=True)
+       
+        query = StudentAttendance.objects.all()
+        if mentor_id:
+            query = query.filter(mentor_id=mentor_id)
+        if batch_id:
+            query = query.filter(batch_id=batch_id)
+        if date:
+            query = query.filter(attendance_date=date)
+           
+        serializer = StudentAttendanceSerializer(query.order_by('-attendance_date', '-id'), many=True)
         return Response(serializer.data)
-        
+       
     elif request.method == 'POST':
-        # Expecting a list of records: [{"student": 1, "date": "2023-10-01", "status": "present", "course": "React"}]
+        # Expecting a list of records: [{"student": 1, "attendance_date": "2023-10-01", "status": "Present", "batch": 1, "mentor": 2}]
         data = request.data
         if not isinstance(data, list):
             data = [data]
-            
+           
         saved_records = []
         for item in data:
-            # Check if exists, update or create
             student_id = item.get('student')
-            date = item.get('date')
-            course = item.get('course')
+            date = item.get('attendance_date')
+            batch_id = item.get('batch')
+            mentor_id = item.get('mentor')
             status_val = item.get('status')
-            
-            if not all([student_id, date, course, status_val]):
+           
+            if not all([student_id, date, status_val]):
                 continue
-                
+               
             try:
                 student = Student.objects.get(pk=student_id)
             except Student.DoesNotExist:
-                # If they are a UserRegister, create a shadow Student record for FK relation
                 try:
                     ur = UserRegister.objects.get(pk=student_id)
                     student = Student.objects.create(
                         name=ur.full_name,
                         email=ur.email,
                         phone=ur.phone,
-                        courseSpecialization=course,
+                        courseSpecialization='Not Specified',
                         paymentStatus='Paid'
                     )
                 except UserRegister.DoesNotExist:
                     continue
-
+ 
+            batch = Batch.objects.filter(pk=batch_id).first() if batch_id else None
+            mentor = Trainer.objects.filter(pk=mentor_id).first() if mentor_id else None
+ 
             obj, created = StudentAttendance.objects.update_or_create(
-                student=student, date=date, course=course,
-                defaults={'status': status_val}
+                student=student, attendance_date=date, batch=batch,
+                defaults={
+                    'status': status_val,
+                    'mentor': mentor
+                }
             )
             saved_records.append(StudentAttendanceSerializer(obj).data)
-                
+               
         return Response(saved_records, status=status.HTTP_200_OK)
+    
 def get_student_info(student_id=None, email=None):
     student_course = ""
     batch_date = ""
@@ -1404,7 +1415,7 @@ def student_assignments(request):
                     continue
             filtered_assignments.append(a)
             
-    data = AssignmentSerializer(filtered_assignments, many=True).data
+    data = AssignmentSerializer(filtered_assignments, many=True, context={'request': request}).data
     
     # Check submissions
     student = None
@@ -1774,53 +1785,237 @@ class OnlineClassViewSet(viewsets.ModelViewSet):
         return Response({"status": online_class.status, "message": "Class ended successfully"})
 
 
+
 @api_view(['GET'])
 @authentication_classes([])
 @permission_classes([])
 def get_course_progress(request, course_id):
     """
-    Fetch course-wise student progress, completion status, batch, and mentor information.
+    Student Progress Dashboard API.
+    Fetches all enrolled students for a course with their assignment-based
+    completion metrics. Optimized to avoid N+1 queries.
+
+    Returns per-student:
+      student_id, name, email, enrollment_date,
+      completion_percentage, total_assignments,
+      completed_assignments, pending_assignments,
+      last_activity_date, status, batch_name, mentor_name
     """
-    target_keyword = ''
-    if course_id == 'react-full-stack-development':
-        target_keyword = 'react'
-    elif course_id == 'java-full-stack':
-        target_keyword = 'java'
-    elif course_id == 'testing':
-        target_keyword = 'test'
-    else:
-        target_keyword = course_id.replace('-', ' ')
-        
-    enrollments = Enrollment.objects.select_related('user', 'assigned_batch', 'assigned_mentor').all()
-    
-    matching_enrollments = []
+    from collections import defaultdict
+
+    # ------------------------------------------------------------------
+    # 1. Resolve course keywords from URL slug
+    # ------------------------------------------------------------------
+    keyword_map = {
+        'react-full-stack-development': ['react', 'mern', 'fullstack', 'full stack'],
+        'mern-stack': ['react', 'mern', 'fullstack', 'full stack'],
+        'java-full-stack': ['java'],
+        'testing': ['test', 'selenium', 'qa', 'automation'],
+        'software-testing': ['test', 'selenium', 'qa', 'automation'],
+        'python-development': ['python'],
+        'data-science': ['data science'],
+        'ai-ml': ['ai', 'ml', 'machine learning', 'artificial intelligence'],
+        'aiml': ['ai', 'ml', 'machine learning', 'artificial intelligence'],
+        'devops': ['devops', 'dev ops', 'aws', 'cloud', 'docker'],
+        'ui-ux-design': ['ui', 'ux', 'design', 'figma'],
+        'uiux-design': ['ui', 'ux', 'design', 'figma'],
+        'soft-skills': ['soft skills', 'leadership', 'communication'],
+        'sql-data-analytics': ['sql', 'analytics', 'data analytic'],
+    }
+    keywords = keyword_map.get(course_id, [course_id.replace('-', ' ')])
+
+    def matches_course(text):
+        if not text:
+            return False
+        t = text.lower()
+        return any(k in t for k in keywords)
+
+    # ------------------------------------------------------------------
+    # 2. Fetch all Assignments for this course (single query)
+    # ------------------------------------------------------------------
+    all_assignments = list(Assignment.objects.all())
+    course_assignments = [a for a in all_assignments if matches_course(a.course)]
+    total_assignments = len(course_assignments)
+    course_assignment_ids = {a.id for a in course_assignments}
+
+    # ------------------------------------------------------------------
+    # 3. Fetch all submissions for course assignments (single query - no N+1)
+    # ------------------------------------------------------------------
+    student_submission_map = defaultdict(set)   # student.id -> set of assignment_ids
+    student_last_activity = {}                  # student.id -> last submitted_at datetime
+
+    if course_assignment_ids:
+        submissions = (
+            AssignmentSubmission.objects
+            .filter(assignment_id__in=course_assignment_ids)
+            .select_related('student')
+            .order_by('-submitted_at')
+        )
+        for sub in submissions:
+            if sub.student_id is not None:
+                student_submission_map[sub.student_id].add(sub.assignment_id)
+                if sub.student_id not in student_last_activity:
+                    student_last_activity[sub.student_id] = sub.submitted_at
+
+    # ------------------------------------------------------------------
+    # 4. Collect enrolled students for this course (deduplicated by email)
+    # ------------------------------------------------------------------
+    seen_emails = set()
+    enrolled = []
+
+    # 4a. Students in the Student table matching this course
+    for s in Student.objects.all().order_by('-id'):
+        if not matches_course(s.courseSpecialization):
+            continue
+        if s.email in seen_emails:
+            continue
+        seen_emails.add(s.email)
+        enrolled.append({
+            'student_id': s.id,
+            'name': s.name,
+            'email': s.email,
+            'enrollment_date': s.created_at,
+            'batch_name': 'Unassigned',
+            'mentor_name': 'Unassigned',
+        })
+
+    # 4b. Students enrolled via Enrollment table (UserRegister users)
+    enrollments = (
+        Enrollment.objects
+        .select_related('user', 'assigned_batch', 'assigned_mentor')
+        .all()
+        .order_by('-created_at')
+    )
     for e in enrollments:
-        if e.user and e.title and target_keyword.lower() in e.title.lower():
-            matching_enrollments.append(e)
-            
-    data = []
-    for e in matching_enrollments:
-        total_fee = float(e.total_fee) if e.total_fee else 0.0
-        amount_paid = float(e.amount_paid) if e.amount_paid else 0.0
-        
-        progress_pct = int((amount_paid / total_fee) * 100) if total_fee > 0 else 0
-        status = 'completed' if progress_pct >= 100 else 'in_progress'
-        
-        data.append({
+        if not e.user:
+            continue
+        if e.user.email in seen_emails:
+            continue
+        # Check if this enrollment matches the course
+        item_match = False
+        if isinstance(e.items, list):
+            for item in e.items:
+                title = item.get('title') or item.get('name', '')
+                if matches_course(title):
+                    item_match = True
+                    break
+        if not item_match and not matches_course(e.title):
+            continue
+        seen_emails.add(e.user.email)
+        batch_name = 'Unassigned'
+        mentor_name = 'Unassigned'
+        if e.assigned_batch:
+            batch_name = e.assigned_batch.name
+        elif e.batch_date:
+            batch_name = e.batch_date
+        if e.assigned_mentor:
+            mentor_name = e.assigned_mentor.name
+        enrolled.append({
             'student_id': e.user.id,
             'name': e.user.full_name,
             'email': e.user.email,
-            'phone': e.user.phone,
-            'batch_id': e.assigned_batch.id if e.assigned_batch else None,
-            'batch_name': e.assigned_batch.name if e.assigned_batch else 'Unassigned',
-            'mentor_id': e.assigned_mentor.id if e.assigned_mentor else None,
-            'mentor_name': e.assigned_mentor.name if e.assigned_mentor else 'Unassigned',
-            'progress': progress_pct,
-            'status': status
+            'enrollment_date': e.created_at,
+            'batch_name': batch_name,
+            'mentor_name': mentor_name,
         })
-        
+
+    # ------------------------------------------------------------------
+    # 5. Build response with per-student assignment completion metrics
+    # ------------------------------------------------------------------
+    data = []
+    for s in enrolled:
+        sid = s['student_id']
+        completed_count = len(student_submission_map.get(sid, set()))
+        pending_count = max(total_assignments - completed_count, 0)
+
+        if total_assignments > 0:
+            completion_pct = round((completed_count / total_assignments) * 100, 1)
+        else:
+            completion_pct = 0.0
+
+        if completion_pct >= 100:
+            status_label = 'Completed'
+        elif completion_pct > 0:
+            status_label = 'In Progress'
+        else:
+            status_label = 'Not Started'
+
+        last_activity = student_last_activity.get(sid)
+        last_activity_str = (
+            last_activity.strftime('%Y-%m-%d %H:%M:%S') if last_activity else None
+        )
+        enrollment_date = s['enrollment_date']
+        enrollment_date_str = (
+            enrollment_date.strftime('%Y-%m-%d') if enrollment_date else None
+        )
+
+        # Compute days elapsed since enrollment (cap at 90 for display)
+        from django.utils import timezone
+        if enrollment_date:
+            aware_enrollment = enrollment_date if enrollment_date.tzinfo else timezone.make_aware(
+                enrollment_date.replace(tzinfo=None) if hasattr(enrollment_date, 'replace') else enrollment_date
+            )
+            delta = timezone.now() - aware_enrollment
+            days_elapsed = max(delta.days, 0)
+        else:
+            days_elapsed = 0
+
+        days_completed = min(days_elapsed, 90)
+        # Certificate: must complete within 90 days AND reach 100%
+        certificate_eligible = (days_elapsed <= 90 and completion_pct >= 100)
+
+        data.append({
+            'student_id': sid,
+            'name': s['name'],
+            'email': s['email'],
+            'enrollment_date': enrollment_date_str,
+            'days_completed': days_completed,
+            'days_elapsed': days_elapsed,
+            'certificate_eligible': certificate_eligible,
+            'completion_percentage': completion_pct,
+            'total_assignments': total_assignments,
+            'completed_assignments': completed_count,
+            'pending_assignments': pending_count,
+            'last_activity_date': last_activity_str,
+            'status': status_label,
+            'batch_name': s['batch_name'],
+            'mentor_name': s['mentor_name'],
+            # Legacy field kept for backward compatibility with existing UI
+            'progress': int(completion_pct),
+        })
+
     return Response({
         'course_id': course_id,
+        'total_assignments': total_assignments,
         'count': len(data),
-        'students': data
+        'students': data,
     })
+
+@api_view(['GET', 'POST'])
+@authentication_classes([])
+@permission_classes([])
+def manage_courses(request):
+    """List all admin-created courses (GET) or create a new one (POST)."""
+    if request.method == 'GET':
+        courses = Course.objects.all().order_by('-created_at')
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
+    # POST - create
+    serializer = CourseSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@authentication_classes([])
+@permission_classes([])
+def delete_course(request, pk):
+    try:
+        course = Course.objects.get(pk=pk)
+        course.delete()
+        return Response({'message': 'Deleted'}, status=status.HTTP_204_NO_CONTENT)
+    except Course.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
