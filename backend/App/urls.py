@@ -51,6 +51,7 @@ urlpatterns = [
     path('courses/<str:course_id>/progress/', views.get_course_progress),
     path('courses-list/', views.manage_courses),
     path('courses-list/<int:pk>/', views.delete_course),
+    path('contact/',views.contact),
 ]
 
 from rest_framework.routers import DefaultRouter

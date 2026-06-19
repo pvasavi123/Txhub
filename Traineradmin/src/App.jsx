@@ -21,6 +21,7 @@ import Attendance from "./admin/pages/Attendance";
 import LoginPage from "./pages/LoginPage";
 import MentorDashboard from "./pages/MentorDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import MessagePage from "./admin/pages/MessagePage";
 
 const AdminRoute = ({ children }) => {
   const userString = localStorage.getItem("user");
@@ -153,6 +154,7 @@ function App() {
           <Route path="attendance" element={<Attendance />} />
           <Route path="settings" element={<Settings />} />
           <Route path="payment" element={<PaymentPage />} />
+          <Route path="messages" element={<MessagePage/>} />
         </Route>
 
         {/* Fallback */}

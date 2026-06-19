@@ -92,26 +92,39 @@ const ContactPage = () => {
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-const handleSubmit = async (e) => {
 
+ const handleSubmit = async (e) => {
   e.preventDefault();
 
-  if (form.name && form.email && form.message) {
+  if (!form.name || !form.email || !form.message) {
+    alert("Please fill all required fields");
+    return;
+  }
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const response = await fetch(
-        "https://script.google.com/macros/s/AKfycby6HqdNMqaWq1DCIgNjZR6IUW2xpwIFZaZOTc5kRKs2iEitm58tXa1tUCYimAJEGXs/exec",
-        {
-          method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(form),
-        }
-      );
+    const response = await fetch(
+      "http://127.0.0.1:8000/api/contact/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          course: form.course,
+          message: form.message,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log("Success:", data);
 
       setSubmitted(true);
 
@@ -122,17 +135,18 @@ const handleSubmit = async (e) => {
         course: "",
         message: "",
       });
-      setLoading(false);
-
-    } catch (error) {
-
-      console.log(error);
-
-      alert("Something went wrong");
-
+    } else {
+      console.log(data);
+      alert("Failed to submit form");
     }
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Something went wrong");
+  } finally {
+    setLoading(false);
   }
 };
+
 
   return (
     <div className="min-h-screen bg-slate-50">

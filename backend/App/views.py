@@ -18,14 +18,14 @@ import random
 from App.models import (
     UserRegister, AdminUser, Student, Enrollment,
     LiveClass, RecordedClass, Resource, Cart,
-    Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, Course
+    Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, Course, Contact
 )
 from App.serializers import (
     UserRegisterSerializer, StudentSerializer, EnrollmentSerializer,
     LiveClassSerializer, RecordedClassSerializer, ResourceSerializer, CartSerializer,
     AssignmentSerializer, NoteSerializer, StudentAttendanceSerializer,
     TrainerSerializer, TrainerLoginSerializer, BatchSerializer, AssignmentSubmissionSerializer,
-    CourseSerializer
+    CourseSerializer, ContactSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
@@ -2068,3 +2068,38 @@ def delete_course(request, pk):
         return Response({'message': 'Deleted'}, status=status.HTTP_204_NO_CONTENT)
     except Course.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
+
+@api_view(['GET','POST'])
+@authentication_classes([])
+@permission_classes([])
+def contact(request):
+    if request.method =="GET" :
+        contacts = Contact.objects.all().order_by('-created_at')
+        serializer = ContactSerializer(contacts, many=True)
+ 
+        return Response(
+            {
+                "success": True,
+                "count": len(serializer.data),
+                "data": serializer.data
+            }
+        )
+    elif  request.method =="POST":
+        serializer = ContactSerializer(data=request.data)
+ 
+        if serializer.is_valid():
+            serializer.save()
+ 
+            return Response(
+                {
+                    "success": True,
+                    "message": "Message submitted successfully",
+                    "data": serializer.data
+                },
+                status=status.HTTP_201_CREATED
+            )
+ 
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )

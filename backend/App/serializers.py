@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from App.models import UserRegister, AdminUser, Student, Enrollment, LiveClass, RecordedClass, Resource, Cart, Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, OnlineClass, Course
+from App.models import UserRegister, AdminUser, Student, Enrollment, LiveClass, RecordedClass, Resource, Cart, Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, OnlineClass, Course, Contact
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -246,3 +246,7 @@ class OnlineClassSerializer(serializers.ModelSerializer):
         model = OnlineClass
         fields = '__all__'
 
+class ContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = "__all__"
