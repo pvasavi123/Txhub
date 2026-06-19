@@ -427,6 +427,80 @@ class OnlineClass(models.Model):
     def __str__(self):
         return f"{self.title} - {self.batch} ({self.status})"
 
+class PaymentOrder(models.Model):
+ 
+    order_id = models.CharField(
+        max_length=100,
+        unique=True
+    )
+    customer_id = models.CharField(
+        max_length = 100,
+        null = True,
+        blank = True
+    )
+    customer_name = models.CharField(
+        max_length = 100,
+        null = True,
+        blank = True
+    )
+    customer_email = models.EmailField(
+        max_length = 100,
+        null = True,
+        blank = True
+    )
+    customer_phone = models.CharField(
+        max_length = 100,
+        null = True,
+        blank = True
+    )
+ 
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+ 
+    payment_session_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+ 
+    # 👤 Link to the student who made the payment (if available)
+    # 📚 Optional reference to the purchased course ID
+    course_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="Identifier of the course associated with this payment"
+    )
+    student = models.ForeignKey(
+        'Student',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments'
+    )
+ 
+    status = models.CharField(
+        max_length=20,
+        default="PENDING"
+    )
+ 
+    # Store full checkout data (items, enrollment_type, batch_date, etc.)
+    # so enrollment can be created after Cashfree redirect without localStorage
+    checkout_data = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Checkout metadata: items, enrollment_type, batch_date, etc."
+    )
+ 
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+ 
+    def __str__(self):
+        return self.order_id
+
 class Contact(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField()

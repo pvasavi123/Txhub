@@ -10,7 +10,8 @@ from rest_framework.response import Response
 from rest_framework import status
  
 from google.oauth2 import id_token
-from google.auth.transport import requests
+from google.auth.transport import requests as google_requests
+import requests
  
 import os
 import random
@@ -18,14 +19,14 @@ import random
 from App.models import (
     UserRegister, AdminUser, Student, Enrollment,
     LiveClass, RecordedClass, Resource, Cart,
-    Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, Course, Contact
+    Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, Course, Contact, PaymentOrder
 )
 from App.serializers import (
     UserRegisterSerializer, StudentSerializer, EnrollmentSerializer,
     LiveClassSerializer, RecordedClassSerializer, ResourceSerializer, CartSerializer,
     AssignmentSerializer, NoteSerializer, StudentAttendanceSerializer,
     TrainerSerializer, TrainerLoginSerializer, BatchSerializer, AssignmentSubmissionSerializer,
-    CourseSerializer, ContactSerializer
+    CourseSerializer, ContactSerializer, PaymentOrderSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
@@ -512,7 +513,7 @@ def google_login(request):
  
     try:
         idinfo = id_token.verify_oauth2_token(
-            token, requests.Request(), GOOGLE_CLIENT_ID
+            token, google_requests.Request(), GOOGLE_CLIENT_ID
         )
  
         email = idinfo.get('email')
@@ -2103,3 +2104,213 @@ def contact(request):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
+def payment(request):
+    amount = request.data.get("amount")
+   
+    # Extract customer details or use defaults
+    customer_id = request.data.get("customer_id", "customer_001")
+    customer_name = request.data.get("customer_name", "Student")
+    customer_email = request.data.get("customer_email", "student@example.com")
+    customer_phone = request.data.get("customer_phone", "9999999999")
+ 
+    # Extract checkout metadata to store server-side
+    checkout_data = {
+        "email": customer_email,
+        "items": request.data.get("items", []),
+        "amount": float(amount),
+        "total_fee": request.data.get("total_fee", float(amount)),
+        "enrollment_type": request.data.get("enrollment_type", "full"),
+        "batch_date": request.data.get("batch_date", "Not Specified"),
+        "payment_method": request.data.get("payment_method", "upi"),
+        "billing_country": request.data.get("billing_country", "India"),
+        "billing_state": request.data.get("billing_state", ""),
+    }
+ 
+    order_id = f"order_{uuid.uuid4().hex[:8]}"
+ 
+    # Build return URL so user is redirected back after payment
+    frontend_url = request.data.get("return_url", "http://localhost:5173")
+    return_url = f"{frontend_url}/payment-status?order_id={order_id}"
+ 
+    payload = {
+        "order_id": order_id,
+        "order_amount": float(amount),
+        "order_currency": "INR",
+ 
+        "customer_details": {
+            "customer_id": customer_id,
+            "customer_name": customer_name,
+            "customer_email": customer_email,
+            "customer_phone": customer_phone
+        },
+        "order_meta": {
+            "return_url": return_url
+        }
+    }
+ 
+    headers = {
+        "x-client-id": settings.CASHFREE_CLIENT_ID,
+        "x-client-secret": settings.CASHFREE_CLIENT_SECRET,
+        "x-api-version": "2023-08-01",
+        "Content-Type": "application/json"
+    }
+ 
+    # Determine URL based on MODE
+    if hasattr(settings, 'MODE') and settings.MODE == 'production':
+        url = "https://api.cashfree.com/pg/orders"
+    else:
+        url = "https://sandbox.cashfree.com/pg/orders"
+ 
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload
+    )
+ 
+    data = response.json()
+    print("CASHFREE RESPONSE:", data)
+ 
+    if "payment_session_id" not in data:
+        print("FAILED TO CREATE ORDER", data)
+        return Response(
+            {"error": "Failed to create order with Cashfree", "details": data},
+            status=400
+        )
+ 
+    PaymentOrder.objects.create(
+        order_id=order_id,
+        amount=amount,
+        payment_session_id=data.get("payment_session_id"),
+        status="PENDING",
+        customer_id=customer_id,
+        customer_name=customer_name,
+        customer_email=customer_email,
+        customer_phone=customer_phone,
+        checkout_data=checkout_data,
+    )
+ 
+    return Response(data)
+ 
+@csrf_exempt
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
+def cashfree_webhook(request):
+    """Handle Cashfree webhook notifications.
+    Validates signature, updates PaymentOrder status, links student, and sets course_id.
+    """
+    # Verify signature using utility
+    signature = request.headers.get('x-webhook-signature')
+    if not signature:
+        return JsonResponse({'error': 'Missing signature'}, status=400)
+    timestamp = request.headers.get('x-webhook-timestamp', '')
+    if not verify_cashfree_signature(request.body, signature, timestamp):
+        return JsonResponse({'error': 'Invalid signature'}, status=400)
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    # Extract order identifier
+    order_id = payload.get('order_id') or payload.get('orderId')
+    if not order_id:
+        return JsonResponse({'error': 'order_id missing'}, status=400)
+    try:
+        po = PaymentOrder.objects.get(order_id=order_id)
+    except PaymentOrder.DoesNotExist:
+        return JsonResponse({'error': 'PaymentOrder not found'}, status=404)
+    # Update status if provided
+    status_val = payload.get('payment_status') or payload.get('order_status')
+    if status_val:
+        po.status = status_val.upper()
+    # Update customer details if present
+    customer = payload.get('customer_details') or {}
+    if customer:
+        po.customer_id = str(customer.get('customer_id') or po.customer_id)
+        po.customer_name = customer.get('customer_name') or po.customer_name
+        po.customer_email = customer.get('customer_email') or po.customer_email
+        po.customer_phone = customer.get('customer_phone') or po.customer_phone
+    # Link to Student via email if possible
+    email = po.customer_email
+    if email:
+        student = Student.objects.filter(email=email).first()
+        if student:
+            po.student = student
+    # Attempt to set course_id from order items
+    items = payload.get('order_items') or payload.get('items') or []
+    if isinstance(items, list) and items:
+        first = items[0]
+        title = first.get('title') or first.get('name')
+        if title:
+            po.course_id = title
+    po.save()
+    return JsonResponse({'result': 'ok'}, status=200)
+ 
+# Verify Payment – calls Cashfree to get real order status and updates DB
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([])
+def verify_payment(request):
+    order_id = request.query_params.get('order_id')
+    if not order_id:
+        return Response({'error': 'order_id required'}, status=400)
+    try:
+        po = PaymentOrder.objects.get(order_id=order_id)
+    except PaymentOrder.DoesNotExist:
+        return Response({'error': 'Order not found'}, status=404)
+ 
+    # Call Cashfree to get the real order status
+    headers = {
+        "x-client-id": settings.CASHFREE_CLIENT_ID,
+        "x-client-secret": settings.CASHFREE_CLIENT_SECRET,
+        "x-api-version": "2023-08-01",
+    }
+    if hasattr(settings, 'MODE') and settings.MODE == 'production':
+        cf_url = f"https://api.cashfree.com/pg/orders/{order_id}"
+    else:
+        cf_url = f"https://sandbox.cashfree.com/pg/orders/{order_id}"
+ 
+    try:
+        cf_resp = requests.get(cf_url, headers=headers)
+        cf_data = cf_resp.json()
+        print("CASHFREE VERIFY RESPONSE:", cf_data)
+ 
+        cf_status = cf_data.get("order_status", "").upper()
+        if cf_status == "PAID":
+            po.status = "PAID"
+        elif cf_status == "ACTIVE":
+            po.status = "ACTIVE"
+        elif cf_status == "EXPIRED":
+            po.status = "EXPIRED"
+        else:
+            po.status = cf_status or po.status
+ 
+        # Update customer details from Cashfree response if missing
+        customer = cf_data.get("customer_details") or {}
+        if customer:
+            if not po.customer_name:
+                po.customer_name = customer.get("customer_name")
+            if not po.customer_email:
+                po.customer_email = customer.get("customer_email")
+            if not po.customer_phone:
+                po.customer_phone = customer.get("customer_phone")
+            if not po.customer_id:
+                po.customer_id = str(customer.get("customer_id", ""))
+ 
+        po.save()
+    except Exception as e:
+        print("Cashfree verify error:", e)
+        # Fall through – return what we have in DB
+ 
+    return Response({
+        'order_id': po.order_id,
+        'status': po.status,
+        'amount': str(po.amount),
+        'customer_email': po.customer_email,
+        'customer_name': po.customer_name,
+        'payment_session_id': po.payment_session_id,
+        'checkout_data': po.checkout_data,
+    })

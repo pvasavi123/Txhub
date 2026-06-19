@@ -12,6 +12,7 @@ import FAQ from "../components/FAQ";
 import Footer from "../components/Footer";
 import Courses from "../components/Courses";
 import CheckoutPage from "../pages/CheckoutPage";
+import PaymentStatus from "../pages/PaymentStatus";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Explore from "../pages/Explore";
@@ -111,6 +112,7 @@ const AppRoutes = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/internship" element={<Form />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/payment-status" element={<PaymentStatus />} />
         <Route path="/my-courses" element={<Navigate to="/student" replace />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/contact" element={<Contact />} />

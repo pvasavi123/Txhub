@@ -18,6 +18,25 @@ import {
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
 
+// Dynamically load Cashfree SDK from CDN to avoid build/npm resolution issues
+const loadCashfreeSDK = () => {
+  return new Promise((resolve) => {
+    if (window.Cashfree) {
+      resolve(window.Cashfree);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    script.onload = () => {
+      resolve(window.Cashfree);
+    };
+    script.onerror = () => {
+      resolve(null);
+    };
+    document.body.appendChild(script);
+  });
+};
+
 const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,12 +76,9 @@ const CheckoutPage = () => {
 let totalToPay = 0;
 let summaryTitle = "";
 
-const livePrice = subtotalBase > 0 ? subtotalBase : 4999;
-const recordedPrice = Math.round(livePrice * 0.4); // 40% of live price
-
 // FULL PAYMENT
 if (enrollmentType === "full") {
-  totalToPay = classType === "live" ? livePrice : recordedPrice;
+  totalToPay = classType === "live" ? 4999 : 1999;
   summaryTitle = "Full Payment";
 }
 
@@ -78,8 +94,9 @@ if (isBalancePayment) {
   summaryTitle = "Remaining Balance";
 }
 
+  // If balance payment, we use the original total for assessment displays
 // NEW PRICE BASED ON CLASS TYPE
-const actualPrice = classType === "live" ? livePrice : recordedPrice;
+const actualPrice = classType === "live" ? 4999 : 1999;
 
 // BASE ASSESSMENT (fake original price)
 const originalPriceBase = actualPrice * 4;
@@ -103,66 +120,80 @@ const discount = originalPriceBase - actualPrice;
     );
   }
 
-  // const handleProceed = () => {
-  //    alert(`Confirming ${summaryTitle} of ₹${totalToPay}. Redirecting to payment...`);
-  // };
-
   const handleProceed = async () => {
-    try {
-      const email = user?.email;
+  try {
+    const email = user?.email;
 
-      // ✅ Validate email before API call
-      // if (!email) {
-      //   alert("User not logged in. Please login first ❌");
-      //   navigate("/login");
-      //   return;
-      // }
+    // 1. Save checkout data to localStorage BEFORE redirect
+    // (page state is lost when Cashfree redirects the browser)
+    const checkoutData = {
+      email: email,
+      items: items,
+      amount: totalToPay,
+      total_fee: subtotalBase,
+      enrollment_type: enrollmentType,
+      batch_date: batchDate,
+      payment_method: paymentMethod,
+      billing_country: billingCountry,
+      billing_state: billingState,
+    };
+    localStorage.setItem("pending_checkout", JSON.stringify(checkoutData));
 
-      console.log("📧 Sending email:", email);
+    // 2. Initialize Cashfree payment (with return_url and checkout details)
+    const paymentResp = await fetch("http://127.0.0.1:8000/api/payment/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: parseFloat(totalToPay),
+        customer_name: user?.full_name || "Student",
+        customer_email: user?.email || "student@example.com",
+        customer_phone: user?.phone || "9999999999",
+        return_url: window.location.origin,
+        // Send all checkout metadata to be stored on the order
+        items: items,
+        total_fee: subtotalBase,
+        enrollment_type: enrollmentType,
+        batch_date: batchDate,
+        payment_method: paymentMethod,
+        billing_country: billingCountry,
+        billing_state: billingState,
+      }),
+    });
+    const paymentData = await paymentResp.json();
 
-      const response = await fetch("http://127.0.0.1:8000/api/enroll/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,                 // ✅ sending email
-          items: items,
-          amount: totalToPay,
-          total_fee: subtotalBase,
-          enrollment_type: enrollmentType,
-          batch_date: batchDate,
-          payment_method: paymentMethod,
-          billing_country: billingCountry,
-          billing_state: billingState,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("✅ Payment Success:", data);
-        alert("Enrollment & Payment initiated successfully ✅");
-
-        // ✅ delete all cart items from DB
-        await fetch(`http://127.0.0.1:8000/api/clearcart/?email=${user.email}`, {
-          method: "DELETE",
-        });
-
-        // ✅ clear frontend cart
-        clearCart();
-
-        // ✅ redirect
-        navigate("/student");
-      } else {
-        console.error("❌ Payment Failed:", data);
-        alert(data.error || "Payment failed ❌");
-      }
-    } catch (error) {
-      console.error("⚠️ Error:", error);
-      alert("Something went wrong ⚠️");
+    if (!paymentResp.ok || !paymentData.payment_session_id) {
+      console.error("Payment init failed:", paymentData);
+      alert(paymentData.error || "Payment initialization failed ❌");
+      localStorage.removeItem("pending_checkout");
+      return;
     }
-  };
+
+    // 3. Load Cashfree SDK from CDN and open checkout
+    const CashfreeSDK = await loadCashfreeSDK();
+    if (!CashfreeSDK) {
+      alert("Failed to load payment SDK. Check your internet connection ❌");
+      localStorage.removeItem("pending_checkout");
+      return;
+    }
+
+    const cashfree = CashfreeSDK({ mode: "sandbox" });
+
+    // Use redirect mode – Cashfree will redirect to return_url after payment
+    cashfree.checkout({
+      paymentSessionId: paymentData.payment_session_id,
+      redirectTarget: "_self",
+    });
+
+    // Browser will redirect away – code below won't execute
+  } catch (error) {
+    console.error("⚠️ Error:", error);
+    localStorage.removeItem("pending_checkout");
+    alert("Something went wrong ⚠️");
+  }
+}
+
+
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
 
@@ -254,7 +285,7 @@ const discount = originalPriceBase - actualPrice;
       <p className="text-sm text-slate-500">Get full access</p>
 
       <p className="text-blue-600 font-bold mt-2">
-        ₹{classType === "live" ? livePrice : recordedPrice}
+        ₹{classType === "live" ? 4999 : 1999}
       </p>
     </div>
 
@@ -478,7 +509,7 @@ const discount = originalPriceBase - actualPrice;
                       <p className="text-[10px] font-bold text-green-600 uppercase">
   {classType === "live" ? "Live Classes" : "Recorded Classes"}
 </p>
-                      <p className="font-black text-blue-600 italic text-sm">₹{classType === "live" ? livePrice : recordedPrice}</p>
+                      <p className="font-black text-blue-600 italic text-sm">₹{classType === "live" ? 4999 : 1999}</p>
                     </div>
                   </div>
                 ))}

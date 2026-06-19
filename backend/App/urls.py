@@ -52,6 +52,9 @@ urlpatterns = [
     path('courses-list/', views.manage_courses),
     path('courses-list/<int:pk>/', views.delete_course),
     path('contact/',views.contact),
+    path('payment/',views.payment),
+    path('cashfree/webhook/', views.cashfree_webhook),
+    path('cashfree/verify/', views.verify_payment),
 ]
 
 from rest_framework.routers import DefaultRouter
