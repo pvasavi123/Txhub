@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from App.models import UserRegister, AdminUser, Student, Enrollment, LiveClass, RecordedClass, Resource, Cart, Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, OnlineClass, Course, Contact, PaymentOrder
+from App.models import UserRegister, AdminUser, Student, Enrollment, LiveClass, RecordedClass, Resource, Cart, Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, OnlineClass, Course, Contact, PaymentOrder, Certificate,CertificateTemplate
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -284,4 +284,16 @@ class ContactSerializer(serializers.ModelSerializer):
 class PaymentOrderSerializer(serializers.ModelSerializer):
     class Meta :
         model = PaymentOrder
+        fields = '__all__'
+
+class CertificateSerializer(serializers.ModelSerializer):
+    student_name = serializers.ReadOnlyField(source='student.full_name')
+ 
+    class Meta:
+        model = Certificate
+        fields = '__all__'
+
+class CertificateTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CertificateTemplate
         fields = '__all__'

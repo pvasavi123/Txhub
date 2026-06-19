@@ -329,8 +329,10 @@ export default function MentorDashboard() {
         )}
 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
   {stats.map((stat, idx) => (
-    <div
+    <motion.div
       key={idx}
+      whileHover={{ y: -6, scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className="
         group
         relative
@@ -341,9 +343,9 @@ export default function MentorDashboard() {
         p-6
         shadow-[0_10px_40px_rgba(15,23,42,0.06)]
         hover:shadow-[0_20px_60px_rgba(79,70,229,0.12)]
-        hover:-translate-y-1
         transition-all
         duration-300
+        cursor-pointer
       "
     >
       {/* Background Glow */}
@@ -402,12 +404,12 @@ export default function MentorDashboard() {
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   ))}
 </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="
-  lg:col-span-2
+  lg:col-span-3
   relative
   overflow-hidden
   rounded-[32px]
@@ -464,8 +466,10 @@ export default function MentorDashboard() {
         </div>
       ) : (
         recentStudents.map((student) => (
-          <div
+          <motion.div
             key={student.id}
+            whileHover={{ y: -4, scale: 1.01 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onClick={() => setShowStudentDetail(student)}
             className="
               group
@@ -480,7 +484,6 @@ export default function MentorDashboard() {
               hover:border-blue-200
               hover:bg-white
               hover:shadow-lg
-              hover:-translate-y-1
               transition-all
               duration-300
               cursor-pointer
@@ -547,122 +550,12 @@ export default function MentorDashboard() {
                 size={46}
               />
             </div>
-          </div>
+          </motion.div>
         ))
       )}
 
     </div>
 
-  </div>
-</div>
-          <div
-  className="
-    relative
-    overflow-hidden
-    rounded-[32px]
-    bg-gradient-to-br
-    from-blue-600
-    via-blue-700
-    to-blue-700
-    p-7
-    text-white
-    shadow-[0_25px_60px_rgba(79,70,229,0.35)]
-  "
->
-  {/* Glow Effects */}
-  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-  <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-300/20 rounded-full blur-3xl"></div>
-
-  <div className="relative z-10">
-    {/* Header */}
-    <div className="mb-6">
-      <h3 className="text-xl font-black">
-        Quick Actions
-      </h3>
-      <p className="text-blue-100 text-sm mt-1">
-        Manage your daily mentoring tasks
-      </p>
-    </div>
-
-    {/* Actions */}
-    <div className="space-y-3">
-      {[
-        {
-          label: "Schedule Class",
-          icon: Calendar,
-          action: () =>
-            showToast(
-              "Class scheduling feature coming soon!",
-              "info"
-            ),
-        },
-        {
-          label: "Upload Notes",
-          icon: Send,
-          action: () => setActiveTab("notes"),
-        },
-        {
-          label: "Create Assignment",
-          icon: Plus,
-          action: () => {
-            setActiveTab("assignments");
-            setTimeout(() => setShowNewAssignment(true), 300);
-          },
-        },
-      ].map((a, idx) => (
-        <button
-          key={idx}
-          onClick={a.action}
-          className="
-            group
-            w-full
-            flex
-            items-center
-            justify-between
-            p-4
-            rounded-2xl
-            bg-white/10
-            border
-            border-white/10
-            backdrop-blur-md
-            hover:bg-white/20
-            hover:translate-x-1
-            transition-all
-            duration-300
-          "
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <a.icon className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-            </div>
-
-            <div className="text-left">
-              <p className="font-semibold text-sm">
-                {a.label}
-              </p>
-              <p className="text-xs text-blue-100">
-                Open action
-              </p>
-            </div>
-          </div>
-
-          <ChevronRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
-        </button>
-      ))}
-    </div>
-
-    {/* Footer */}
-    <div className="mt-6 pt-5 border-t border-white/10">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-blue-100">
-          Productivity Tools
-        </span>
-
-        <span className="px-3 py-1 rounded-full bg-white/10 text-xs font-semibold">
-          3 Actions
-        </span>
-      </div>
-    </div>
   </div>
 </div>
         </div>
@@ -1130,23 +1023,6 @@ export default function MentorDashboard() {
               </div>
             )}
 
-            {/* Calendar Heatmap (Mocked visual) */}
-            <div className="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
-              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-500" /> Weekly Trends</h3>
-              <div className="flex justify-between items-end h-32 gap-2 pb-2">
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
-                  const height = [40, 60, 80, 50, 90, 20, 10][i];
-                  return (
-                    <div key={i} className="flex flex-col items-center gap-2 flex-1">
-                      <div className="w-full bg-slate-100 rounded-t-lg relative flex-1 group cursor-pointer hover:bg-blue-50 transition-colors">
-                        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t-lg transition-all group-hover:bg-blue-400" style={{ height: `${height}%` }}></div>
-                      </div>
-                      <span className="text-xs font-bold text-slate-400">{day}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
 
           </div>
 
@@ -2016,7 +1892,7 @@ export default function MentorDashboard() {
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="flex gap-3 text-xs font-bold">
-                              <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg">{presentCount} Present</span>
+                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg">{presentCount} Present</span>
                               <span className="px-2 py-1 bg-red-100 text-red-600 rounded-lg">{absentCount} Absent</span>
                               <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg">{total} Total</span>
                             </div>
@@ -2067,101 +1943,98 @@ export default function MentorDashboard() {
     );
   };
 
-  // ═══════════════════════════════════════════
-  //  RENDER
-  // ═══════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans">
-      {/* Header */}
-     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+    <div className="min-h-screen bg-slate-50/50 flex font-sans">
+      {/* Sidebar */}
+      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 h-screen sticky top-0 p-6 shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex-col justify-between">
+        <div>
+          {/* Logo */}
+          <div className="flex flex-col gap-2 px-2 mb-10">
+            <img
+              src="/logo1.png"
+              alt="TX Hub"
+              className="h-14 w-auto object-contain mix-blend-multiply brightness-110 contrast-110 self-start"
+            />
+          </div>
 
-  {/* Left Section */}
-  <div className="flex items-center gap-4">
-    <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-blue-500 flex items-center justify-center shadow-xl shadow-blue-200">
-      <GraduationCap className="w-8 h-8 text-white" />
-    </div>
+          {/* Navigation Menu */}
+          <nav className="space-y-2">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`group relative w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all duration-300 active:scale-95 ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-xl shadow-blue-100 translate-x-1'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <tab.icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'text-white scale-110' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                  <span className="truncate">{tab.label}</span>
+                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-sm" />}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-    <div>
-      <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-        Mentor Workspace
-      </h1>
+        {/* Profile Card */}
+        <div className="pt-6 border-t border-slate-50">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-black shadow-sm">
+                {(trainerData?.name || "T").charAt(0).toUpperCase()}
+              </div>
+              <div className="text-left overflow-hidden">
+                <p className="text-sm font-black text-slate-800 truncate">{trainerData?.name || "Trainer"}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase truncate">Mentor</p>
+              </div>
+            </div>
+            <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          </div>
+        </div>
+      </aside>
 
-      <div className="flex flex-wrap items-center gap-2 mt-2">
-        <span className="text-slate-500 text-sm">
-          Welcome back,
-        </span>
+      {/* Main Content Area */}
+      <main className="flex-1 min-h-screen overflow-y-auto p-8 lg:p-12">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+              Mentor Workspace
+            </h1>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-slate-500 text-sm">
+                Welcome back,
+              </span>
+              <span className="text-blue-600 text-sm font-bold">
+                {trainerData?.name || "Trainer"}
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold">
+                {trainerData?.assigned_course || "All Courses"}
+              </span>
+            </div>
+          </div>
 
-        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-bold">
-          {trainerData?.name || "Trainer"}
-        </span>
+          <button
+            onClick={() => {
+              localStorage.removeItem("trainer_access_token");
+              localStorage.removeItem("trainer_refresh_token");
+              localStorage.removeItem("trainer_data");
+              navigate("/login");
+            }}
+            className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-600 bg-white rounded-xl font-semibold shadow-sm hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        </div>
 
-        <span className="text-slate-300">•</span>
-
-        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-semibold">
-          {trainerData?.assigned_course || "All Courses"}
-        </span>
-      </div>
-    </div>
-  </div>
-
-  {/* Right Section */}
-  <div className="flex items-center gap-3 flex-wrap">
-
-    {/* Notification */}
-    <button
-      onClick={() => showToast("You have 3 new notifications", "info")}
-      className="relative p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300"
-    >
-      <Bell className="w-5 h-5 text-slate-600" />
-
-      <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-        3
-      </span>
-    </button>
-
-    {/* Create Resource */}
-    <button
-      onClick={() => setShowResourceModal(true)}
-      className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 transition-all duration-300"
-    >
-      <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-      Create Resource
-    </button>
-
-    {/* Logout */}
-    <button
-      onClick={() => {
-        localStorage.removeItem("trainer_access_token");
-        localStorage.removeItem("trainer_refresh_token");
-        localStorage.removeItem("trainer_data");
-        navigate("/login");
-      }}
-      className="flex items-center gap-2 px-5 py-3 bg-white border border-rose-200 text-rose-600 rounded-2xl font-bold shadow-sm hover:bg-rose-50 hover:border-rose-300 hover:shadow-md transition-all duration-300"
-    >
-      <LogOut className="w-4 h-4" />
-      Logout
-    </button>
-
-  </div>
-</div>
-
-      {/* Modern Tabs */}
-      <div className="flex overflow-x-auto pb-4 mb-6 hide-scrollbar gap-2">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${isActive ? 'bg-slate-800 text-white shadow-lg shadow-slate-300/50' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
-                }`}>
-              <tab.icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Tab Content */}
-  <div className="relative">
+        {/* Tab Content */}
+        <div className="relative">
 
   <AnimatePresence mode="wait">
     <motion.div
@@ -2193,8 +2066,8 @@ export default function MentorDashboard() {
       </div>
     </motion.div>
   </AnimatePresence>
-
-</div>
+        </div>
+      </main>
       {/* ── MODALS ─────────────────────────────── */}
       <AnimatePresence>
         {showNewCourse && (

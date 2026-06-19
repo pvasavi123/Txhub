@@ -100,7 +100,7 @@ const Footer = () => {
               },
               {
                 Icon: FaLinkedin,
-                link: "https://www.linkedin.com/company/tanvox-technologies/",
+                link: "https://www.linkedin.com/company/114664017/admin/dashboard/",
               },
               {
                 Icon: FaInstagram,

@@ -270,29 +270,20 @@ const BlogPage = () => {
                       alt={post.title} 
                       className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
-                    <div className="absolute bottom-6 left-6 right-6">
-                      <span className={`inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${post.categoryColor} mb-3 shadow-md`}>
-                        {post.category}
-                      </span>
-                      <h2 className="text-2xl font-black text-white leading-tight drop-shadow-md">
-                        {post.title}
-                      </h2>
-                    </div>
+                    <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors duration-500" />
                   </div>
                   <div className="p-8 flex-1 flex flex-col">
-                    <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6 flex-1">
+                    <div className="mb-3">
+                      <span className={`inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${post.categoryColor} shadow-sm`}>
+                        {post.category}
+                      </span>
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-800 leading-tight mb-3 group-hover:text-blue-600 transition-colors">
+                      {post.title}
+                    </h2>
+                    <p className="text-slate-500 text-sm font-medium leading-relaxed mb-2 flex-1">
                       {post.excerpt}
                     </p>
-                    <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                      <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
-                        <Clock size={14} /> 
-                        <span>{post.readTime} • {post.date}</span>
-                      </div>
-                      <button className="flex items-center gap-1 text-slate-800 font-black text-sm hover:text-blue-600 transition-colors group/btn">
-                        Read <ArrowRight size={14} className="ml-1 group-hover/btn:translate-x-1 transition-transform" />
-                      </button>
-                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -330,28 +321,19 @@ const BlogPage = () => {
                       className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors duration-500" />
-                    <div className="absolute top-4 left-4">
-                      <span className={`inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${post.categoryColor} shadow-sm backdrop-blur-md bg-white/90`}>
+                  </div>
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="mb-3">
+                      <span className={`inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${post.categoryColor} shadow-sm`}>
                         {post.category}
                       </span>
                     </div>
-                  </div>
-                  <div className="p-6 flex-1 flex flex-col">
                     <h3 className="text-lg font-black text-slate-800 leading-snug mb-3 group-hover:text-blue-600 transition-colors">
                       {post.title}
                     </h3>
-                    <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6 flex-1 line-clamp-3">
+                    <p className="text-slate-500 text-sm font-medium leading-relaxed mb-2 flex-1 line-clamp-3">
                       {post.excerpt}
                     </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
-                      <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
-                        <Clock size={12} /> 
-                        <span>{post.readTime}</span>
-                      </div>
-                      <span className="text-xs text-slate-400 font-bold bg-slate-50 px-2 py-1 rounded-md">
-                        {post.date}
-                      </span>
-                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -397,17 +379,15 @@ const BlogPage = () => {
               Join Our Tech Community
             </h2>
             <p className="text-slate-400 font-medium mb-10 max-w-lg mx-auto leading-relaxed">
-              Subscribe to our newsletter for the latest technical insights, career advice, and deep dives into modern development stacks.
+              Have any questions, need career guidance, or want to explore our programs? Reach out to our team today.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                className="flex-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-4 text-white placeholder:text-slate-500 outline-none focus:border-blue-500 focus:bg-white/10 font-medium text-sm transition-all"
-              />
-              <button className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm hover:bg-blue-500 transition-all active:scale-95 shadow-lg shadow-blue-900/50">
-                Subscribe
-              </button>
+            <div className="flex justify-center">
+              <Link 
+                to="/contact"
+                className="px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-sm transition-all active:scale-95 shadow-lg shadow-blue-900/50"
+              >
+                Contact Us
+              </Link>
             </div>
           </div>
         </motion.div>

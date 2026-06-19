@@ -165,13 +165,7 @@ const Users = () => {
     </div>
   </div>
 
-  <button
-    onClick={downloadReport}
-    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-medium shadow-md hover:bg-slate-800 transition-all"
-  >
-    <Download size={18} />
-    Download Report
-  </button>
+
 </div>
 
         {/* STATS CARDS */}
@@ -191,13 +185,13 @@ const Users = () => {
       bg: "bg-emerald-50",
       text: "text-emerald-600",
     },
-    {
-      label: "Outstanding Balance",
-      val: `₹${totalPending.toLocaleString()}`,
-      icon: <Activity />,
-      bg: "bg-amber-50",
-      text: "text-amber-600",
-    },
+    // {
+    //   label: "Outstanding Balance",
+    //   val: `₹${totalPending.toLocaleString()}`,
+    //   icon: <Activity />,
+    //   bg: "bg-amber-50",
+    //   text: "text-amber-600",
+    // },
   ].map((stat, i) => (
     <div
       key={i}

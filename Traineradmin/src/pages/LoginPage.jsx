@@ -100,7 +100,7 @@ const LoginPage = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-xl py-3 bg-slate-50 border"
-                  placeholder="trainer@txhub.com"
+                  placeholder="Trainer Mail ID"
                 />
               </div>
             </div>

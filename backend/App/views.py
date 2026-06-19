@@ -1,13 +1,34 @@
 from django.core.mail import send_mail
 from django.conf import settings
+from datetime import date
+import uuid
 from django.db.models import Sum
 from django.core.cache import cache
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
+
+# ReportLab and PDF Generation imports
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.colors import HexColor, white
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.pdfmetrics import stringWidth
+import qrcode
+import tempfile
+
+def _register_fonts():
+    pass
+
+def _font(name, fallback):
+    return fallback
+
  
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+
+from .models import CertificateTemplate, Certificate, Student
+from .serializers import CertificateTemplateSerializer, CertificateSerializer
  
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -19,17 +40,17 @@ import random
 from App.models import (
     UserRegister, AdminUser, Student, Enrollment,
     LiveClass, RecordedClass, Resource, Cart,
-    Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, Course, Contact, PaymentOrder
+    Assignment, Note, StudentAttendance, Trainer, Batch, AssignmentSubmission, Course, Contact, PaymentOrder,Certificate, CertificateTemplate
 )
 from App.serializers import (
     UserRegisterSerializer, StudentSerializer, EnrollmentSerializer,
     LiveClassSerializer, RecordedClassSerializer, ResourceSerializer, CartSerializer,
     AssignmentSerializer, NoteSerializer, StudentAttendanceSerializer,
     TrainerSerializer, TrainerLoginSerializer, BatchSerializer, AssignmentSubmissionSerializer,
-    CourseSerializer, ContactSerializer, PaymentOrderSerializer
+    CourseSerializer, ContactSerializer, PaymentOrderSerializer, CertificateSerializer, CertificateTemplateSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes, authentication_classes
 @api_view(['POST'])
 @authentication_classes([])
@@ -2314,3 +2335,288 @@ def verify_payment(request):
         'payment_session_id': po.payment_session_id,
         'checkout_data': po.checkout_data,
     })
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
+def generate_certificate(request):
+    student_id = request.data.get('student_id')
+    course     = request.data.get('course')
+    custom_name = request.data.get('custom_name', '').strip()
+ 
+    if not student_id or not course:
+        return Response({'error': 'student_id and course required'}, status=status.HTTP_400_BAD_REQUEST)
+ 
+    try:
+        student = UserRegister.objects.get(id=student_id)
+    except UserRegister.DoesNotExist:
+        return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+ 
+    display_name = custom_name if custom_name else student.full_name
+ 
+    # Prevent duplicates
+    if Certificate.objects.filter(student=student, course=course).exists():
+        cert = Certificate.objects.get(student=student, course=course)
+        return Response({'message': 'Certificate already exists', 'certificate_url': cert.pdf_file.url})
+ 
+    # Fetch global template
+    template = CertificateTemplate.objects.order_by('-created_at').first()
+    if not template:
+        return Response({'error': 'No certificate template uploaded yet. Ask admin to upload one.'}, status=status.HTTP_404_NOT_FOUND)
+ 
+    # Enrollment dates
+    enrollment = Enrollment.objects.filter(user=student).order_by('created_at').first()
+    start_date = enrollment.created_at.strftime('%d %B %Y') if enrollment else date.today().strftime('%d %B %Y')
+    end_date   = date.today().strftime('%d %B %Y')
+ 
+    # Generate cert ID
+    cert_id  = str(uuid.uuid4())[:8].upper()
+    filename = f'cert_{student_id}_{cert_id}.pdf'
+    certs_dir = os.path.join(settings.MEDIA_ROOT, 'certificates')
+    os.makedirs(certs_dir, exist_ok=True)
+    filepath = os.path.join(certs_dir, filename)
+ 
+    # ── PDF canvas (landscape A4: 841.89 x 595.27 pt) ──────────────────────
+    _register_fonts()
+    c = canvas.Canvas(filepath, pagesize=landscape(A4))
+    W, H = landscape(A4)   # W≈841.89, H≈595.27
+ 
+    # Draw template image as full-page background
+    try:
+        c.drawImage(template.template_image.path, 0, 0, W, H, preserveAspectRatio=False)
+    except Exception as e:
+        return Response({'error': f'Template image error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+    # ── Colour palette ───────────────────────────────────────────────────────
+    navy_color = HexColor('#0A1250')            # dark navy for student name
+    dark_text  = HexColor('#1A1A2E')            # near-black for body text
+ 
+    # ════════════════════════════════════════════════════════════════════════
+    # 1. STUDENT NAME
+    # ════════════════════════════════════════════════════════════════════════
+    name_font  = _font('CertNameFont', 'Helvetica-BoldOblique')
+    default_name_size  = 46
+   
+    name_size = default_name_size
+    while pdfmetrics.stringWidth(display_name, name_font, name_size) > (W * 0.8) and name_size > 20:
+        name_size -= 1
+ 
+    # Move Student Name DOWN so it forms a tight block with the rest of the text
+    name_y     = H * 0.49  
+ 
+    c.setFillColor(navy_color)
+    c.setFont(name_font, name_size)
+    c.drawCentredString(W / 2, name_y, display_name)
+ 
+    # ════════════════════════════════════════════════════════════════════════
+    # 2. DESCRIPTION & COURSE LINE (Inline mixed fonts)
+    # ════════════════════════════════════════════════════════════════════════
+    reg_font  = _font('CertRegular', 'Helvetica')
+    bold_font = _font('CertBold',    'Helvetica-Bold')
+    c.setFillColor(dark_text)
+ 
+    # EXACT INLINE SENTENCE
+    desc_y = H * 0.44
+ 
+    part1 = "for successfully completed his/her "
+    part2 = "3 Months of Training at TX hub"
+    part3 = " as a "
+    part4 = course.upper()
+    part5 = " from"
+ 
+    font_regular = "Times-Roman"
+    font_bold = "Times-Bold"
+    font_size = 12
+ 
+    # Calculate total width
+    total_width = (
+        stringWidth(part1, font_regular, font_size) +
+        stringWidth(part2, font_bold, font_size) +
+        stringWidth(part3, font_regular, font_size) +
+        stringWidth(part4, font_bold, font_size) +
+        stringWidth(part5, font_regular, font_size)
+    )
+ 
+    start_x = (W - total_width) / 2
+ 
+    text = c.beginText()
+    text.setTextOrigin(start_x, desc_y)
+ 
+    text.setFont(font_regular, font_size)
+    text.textOut(part1)
+ 
+    text.setFont(font_bold, font_size)
+    text.textOut(part2)
+ 
+    text.setFont(font_regular, font_size)
+    text.textOut(part3)
+ 
+    text.setFont(font_bold, font_size)
+    text.textOut(part4)
+ 
+    text.setFont(font_regular, font_size)
+    text.textOut(part5)
+ 
+    c.drawText(text)
+ 
+    # ════════════════════════════════════════════════════════════════════════
+    # 3. DATE LINE
+    # ════════════════════════════════════════════════════════════════════════
+    date_y = H * 0.40
+    c.setFont(reg_font, 12)
+    c.drawCentredString(W / 2, date_y, f"{start_date}  To  {end_date}")
+ 
+    # ════════════════════════════════════════════════════════════════════════
+    # 4. QR CODE OVERLAY
+    #    Draws a real QR code exactly over the dummy one at the bottom left
+    # ════════════════════════════════════════════════════════════════════════
+    # Generate QR Code image with verification URL
+    qr_data = f"https://verify.txhub.com/certificate/{cert_id}"
+    qr = qrcode.make(qr_data)
+   
+    # Save QR code to a temporary file
+    temp_qr_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+    qr.save(temp_qr_file.name)
+    temp_qr_file.close()
+ 
+    # Draw the QR code image over the template's dummy QR code inside the golden seal
+    # Adjust coordinates based on A4 landscape (841 x 595). The QR is bottom left.
+    qr_size = 46
+    qr_x = W * 0.105
+    qr_y = H * 0.138
+ 
+    # Blank out the existing QR bitmap
+    c.setFillColor(white)
+    c.rect(qr_x, qr_y, qr_size, qr_size, fill=1, stroke=0)
+ 
+    # Insert the newly generated QR code
+    c.drawImage(temp_qr_file.name, qr_x, qr_y, qr_size, qr_size)
+   
+    # Clean up temp file
+    try:
+        os.unlink(temp_qr_file.name)
+    except:
+        pass
+ 
+    # ── Save PDF ─────────────────────────────────────────────────────────────
+    c.save()
+ 
+    # Save record to DB
+    cert = Certificate.objects.create(certificate_id=cert_id, student=student, course=course)
+    cert.pdf_file.name = f'certificates/{filename}'
+    cert.save()
+ 
+    return Response({
+        'message': 'Certificate generated successfully',
+        'certificate_url': cert.pdf_file.url,
+        'certificate_id': cert_id
+    })
+ 
+
+ 
+
+
+ 
+# router.register(r'certificate-templates', views.CertificateTemplateViewSet, basename='certificate-template')
+
+class CertificateTemplateViewSet(viewsets.ModelViewSet):
+    queryset = CertificateTemplate.objects.all()
+    serializer_class = CertificateTemplateSerializer
+    authentication_classes = []
+    permission_classes = []
+
+# @api_view(['POST'])
+# def generate_certificate(request):
+#     # expect student_id and course
+#     student_id = request.data.get('student_id')
+#     course = request.data.get('course')
+#     custom_name = request.data.get('custom_name')
+    
+#     if not student_id or not course:
+#         return Response({'error': 'student_id and course required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+#     try:
+#         student = UserRegister.objects.get(id=student_id)
+#     except UserRegister.DoesNotExist:
+#         return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+#     # Check if certificate already exists
+#     if Certificate.objects.filter(student=student, course=course).exists():
+#         cert = Certificate.objects.get(student=student, course=course)
+#         return Response({'message': 'Certificate already exists', 'certificate_url': cert.pdf_file.url})
+        
+#     # Fetch template
+#     try:
+#         template = CertificateTemplate.objects.get(course=course)
+#     except CertificateTemplate.DoesNotExist:
+#         return Response({'error': 'No certificate template found for this course'}, status=status.HTTP_404_NOT_FOUND)
+        
+#     # Generate ID
+#     cert_id = str(uuid.uuid4())[:8].upper()
+    
+#     # Create PDF using ReportLab
+#     filename = f'cert_{student_id}_{cert_id}.pdf'
+    
+#     # Ensure directory exists
+#     certs_dir = os.path.join(settings.MEDIA_ROOT, 'certificates')
+#     os.makedirs(certs_dir, exist_ok=True)
+    
+#     filepath = os.path.join(certs_dir, filename)
+    
+#     c = canvas.Canvas(filepath, pagesize=landscape(A4))
+#     width, height = landscape(A4)
+    
+#     # Draw image
+#     template_path = template.template_image.path
+#     try:
+#         c.drawImage(template_path, 0, 0, width, height)
+#     except Exception as e:
+#         return Response({'error': f'Template image error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+#     # Draw text - You may need to adjust coordinates based on your template design
+#     # Draw text - adjust coordinates to match the provided sample
+#     c.setFont('Helvetica-Bold', 36)
+#     c.drawString(100, height / 2.0, custom_name if custom_name else student.full_name)
+    
+#     c.setFont('Helvetica-Bold', 24)
+#     c.drawCentredString(width/2.0, height/2.0 + 20, student.full_name)
+#     c.drawString(100, height / 2.0 - 100, course)
+    
+#     c.setFont('Helvetica', 18)
+#     c.drawCentredString(width/2.0, height/2.0 - 20, course)
+    
+#     c.setFont('Helvetica', 12)
+#     from datetime import date
+#     c.drawString(100, 100, f'Issue Date: {date.today().strftime('%B %d, %Y')}')
+#     c.drawRightString(width - 100, 100, f'Certificate ID: {cert_id}')
+#     c.drawString(100, height / 2.0 - 130, f'ON {date.today().strftime("%B %d, %Y").upper()}')
+    
+#     c.drawRightString(width - 50, 50, f'ID: {cert_id}')
+    
+#     c.save()
+    
+#     # Save to DB
+#     cert = Certificate.objects.create(
+#         certificate_id=cert_id,
+#         student=student,
+#         course=course
+#     )
+#     cert.pdf_file.name = f'certificates/{filename}'
+#     cert.save()
+    
+#     return Response({
+#         'message': 'Certificate generated successfully',
+#         'certificate_url': cert.pdf_file.url,
+#         'certificate_id': cert_id
+#     })
+ 
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def verify_certificate(request, cert_id):
+    try:
+        cert = Certificate.objects.get(certificate_id=cert_id)
+        serializer = CertificateSerializer(cert)
+        return Response({'valid': True, 'certificate': serializer.data})
+    except Certificate.DoesNotExist:
+        return Response({'valid': False, 'error': 'Certificate not found'}, status=status.HTTP_404_NOT_FOUND)

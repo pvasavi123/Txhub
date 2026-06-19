@@ -426,6 +426,27 @@ class OnlineClass(models.Model):
  
     def __str__(self):
         return f"{self.title} - {self.batch} ({self.status})"
+    
+class CertificateTemplate(models.Model):
+    template_image = models.FileField(upload_to='certificate_templates/')
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    def __str__(self):
+        return f"Certificate Template ({self.id})"
+ 
+class Certificate(models.Model):
+    certificate_id = models.CharField(max_length=100, unique=True)
+    student = models.ForeignKey(UserRegister, on_delete=models.CASCADE)
+    course = models.CharField(max_length=200)
+    issue_date = models.DateField(auto_now_add=True)
+    pdf_file = models.FileField(upload_to='certificates/', blank=True, null=True)
+ 
+    class Meta:
+        unique_together = ('student', 'course')
+ 
+    def __str__(self):
+        return f"{self.certificate_id} - {self.student.full_name} - {self.course}"
+    
 
 class PaymentOrder(models.Model):
  

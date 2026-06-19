@@ -464,32 +464,39 @@ const ContactPage = () => {
                   Icon: Briefcase,
                   label: "LinkedIn",
                   color: "hover:bg-blue-600 hover:text-white text-slate-300",
+                  link: "https://www.linkedin.com/company/114664017/admin/dashboard/",
                 },
                 {
                   Icon: MessageCircle,
                   label: "Twitter / X",
                   color: "hover:bg-slate-600 hover:text-white text-slate-300",
+                  link: "https://x.com/tanvox2025",
                 },
                 {
                   Icon: Camera,
                   label: "Instagram",
                   color: "hover:bg-pink-600 hover:text-white text-slate-300",
+                  link: "https://www.instagram.com/tanvox_technologies?igsh=aXpib2MxdG85cjB1",
                 },
                 {
                   Icon: PlayCircle,
                   label: "YouTube",
                   color: "hover:bg-red-600 hover:text-white text-slate-300",
+                  link: "#",
                 },
-              ].map(({ Icon, label, color }, i) => (
-                <motion.button
+              ].map(({ Icon, label, color, link }, i) => (
+                <motion.a
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   key={i}
-                  className={`flex items-center gap-3 p-5 bg-white/5 border border-white/10 rounded-2xl font-bold text-sm transition-colors duration-300 ${color} hover:border-transparent`}
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-3 p-5 bg-white/5 border border-white/10 rounded-2xl font-bold text-sm transition-colors duration-300 ${color} hover:border-transparent cursor-pointer`}
                 >
                   <Icon size={20} />
                   {label}
-                </motion.button>
+                </motion.a>
               ))}
             </div>
             

@@ -8,3 +8,5 @@ PyJWT
 cryptography
 google-auth
 djangorestframework-simplejwt
+reportlab
+qrcode[pil]

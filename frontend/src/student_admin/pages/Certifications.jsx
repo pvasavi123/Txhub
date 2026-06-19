@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Award, Upload, Trash2, CheckCircle } from 'lucide-react';
-
+ 
 export default function Certifications() {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-
+ 
   useEffect(() => {
     fetchTemplates();
   }, []);
-
+ 
   const fetchTemplates = async () => {
     try {
       const res = await fetch('http://127.0.0.1:8000/api/certificate-templates/');
@@ -22,24 +22,24 @@ export default function Certifications() {
       setLoading(false);
     }
   };
-
+ 
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file) {
       alert("Please select a template image file.");
       return;
     }
-
+ 
     setUploading(true);
     const formData = new FormData();
     formData.append('template_image', file);
-
+ 
     try {
       const res = await fetch('http://127.0.0.1:8000/api/certificate-templates/', {
         method: 'POST',
         body: formData,
       });
-
+ 
       if (res.ok) {
         alert("Template uploaded successfully! This template will be used for all courses.");
         setFile(null);
@@ -56,7 +56,7 @@ export default function Certifications() {
       setUploading(false);
     }
   };
-
+ 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this template?")) return;
     try {
@@ -72,9 +72,9 @@ export default function Certifications() {
       console.error(err);
     }
   };
-
+ 
   const activeTemplate = templates[templates.length - 1];
-
+ 
   return (
     <div className="p-6 h-full flex flex-col">
       <div className="mb-8">
@@ -86,7 +86,7 @@ export default function Certifications() {
           Upload one global certificate template used for all courses.
         </p>
       </div>
-
+ 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upload Form */}
         <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm col-span-1 h-fit">
@@ -115,7 +115,7 @@ export default function Certifications() {
             </button>
           </form>
         </div>
-
+ 
         {/* Active Template + All Templates */}
         <div className="col-span-1 lg:col-span-2 space-y-6">
           {/* Active Template highlight */}
@@ -140,11 +140,11 @@ export default function Certifications() {
               </div>
             </div>
           )}
-
+ 
           {/* All templates list */}
           <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
             <h2 className="text-xl font-bold text-slate-700 mb-4">All Templates</h2>
-
+ 
             {loading ? (
               <p className="text-slate-500">Loading...</p>
             ) : templates.length === 0 ? (

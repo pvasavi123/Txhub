@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { BookOpen, AlertCircle, ArrowRight, Award, Lock } from 'lucide-react';
+import { BookOpen, AlertCircle, ArrowRight, Award, Lock, PlayCircle } from 'lucide-react';
 import { AuthContext } from '../../website/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -51,7 +51,7 @@ const CATEGORY_IMAGES = {
 const getCourseFallbackImage = (title, category) => {
   const t = (title || '').toLowerCase();
   const c = (category || '').toLowerCase();
-  
+
   if (t.includes('react') || t.includes('mern') || t.includes('mongodb') || t.includes('frontend')) {
     return 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=600&h=300&fit=crop';
   }
@@ -86,6 +86,71 @@ const MyCourses = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [downloading, setDownloading] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [customName, setCustomName] = useState('');
+  const [showNameModal, setShowNameModal] = useState(false);
+
+  const openCertificateModal = (course) => {
+    setSelectedCourse(course);
+    setCustomName(user?.full_name || user?.name || '');
+    setShowNameModal(true);
+  };
+
+  const handleGenerateCertificate = async () => {
+
+    if (!customName.trim()) { alert("Name is required!"); return; }
+
+    setDownloading(selectedCourse.id);
+
+    setShowNameModal(false);
+
+    try {
+
+      const res = await fetch(`http://127.0.0.1:8000/api/certificates/generate/`, {
+
+        method: 'POST',
+
+        headers: { 'Content-Type': 'application/json' },
+
+        body: JSON.stringify({
+
+          student_id: user.id,
+
+          course: selectedCourse.title,
+
+          custom_name: customName.trim()
+
+        }),
+
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+
+        window.open(`http://127.0.0.1:8000${data.certificate_url}`, '_blank');
+
+      } else {
+
+        alert(data.error || 'Failed to generate certificate');
+
+      }
+
+    } catch (err) {
+
+      alert('Error generating certificate');
+
+    } finally {
+
+      setDownloading(null);
+
+      setSelectedCourse(null);
+
+    }
+
+  };
+
   useEffect(() => {
     const fetchEnrollments = async () => {
       if (!user?.email) { setLoading(false); return; }
@@ -108,6 +173,7 @@ const MyCourses = () => {
   }, [user]);
 
   if (loading) {
+
     return (
       <div className="flex justify-center items-center h-64">
         <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
@@ -117,6 +183,53 @@ const MyCourses = () => {
 
   return (
     <div className="space-y-6">
+      {showNameModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                <Award className="text-indigo-600" size={20} />
+              </div>
+              <h2 className="text-xl font-black text-slate-800">Generate Certificate</h2>
+            </div>
+            <p className="text-slate-500 text-sm mb-5">
+              Enter your name exactly as you want it to appear on the certificate.
+            </p>
+            <div className="mb-2">
+              <label className="block text-sm font-bold text-slate-700 mb-1">Course</label>
+              <div className="px-4 py-2 bg-slate-50 rounded-xl text-slate-600 text-sm font-medium border border-slate-100">
+                {selectedCourse?.title}
+              </div>
+            </div>
+            <div className="mb-5 mt-3">
+              <label className="block text-sm font-bold text-slate-700 mb-1">Full Name on Certificate</label>
+              <input
+                type="text"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-slate-800 font-medium"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowNameModal(false); setSelectedCourse(null); }}
+                className="flex-1 py-3 border-2 border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGenerateCertificate}
+                disabled={!customName.trim()}
+                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Award size={18} /> Generate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
           <BookOpen className="text-blue-600" />
@@ -151,20 +264,21 @@ const MyCourses = () => {
             const daysElapsed = getDaysElapsed(course.created_at);
             const withinWindow = daysElapsed <= COURSE_DAYS;
             const certEligible = progress >= 100 && withinWindow;
+            const isCompleted = certEligible;
 
             return (
               <div key={course.id || idx} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col">
                 <div className="h-40 bg-blue-50 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden group">
                   {(() => {
                     const fallbackImg = getCourseFallbackImage(course.title, course.category);
-                    
+
                     // 1. Check matching assets saved image
                     const assetImg = getAssetImage(course.title);
                     if (assetImg) {
                       return (
-                        <img 
-                          src={assetImg} 
-                          alt={course.title} 
+                        <img
+                          src={assetImg}
+                          alt={course.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       );
@@ -181,18 +295,18 @@ const MyCourses = () => {
 
                     if (imgSrc) {
                       return (
-                        <img 
-                          src={imgSrc} 
-                          alt={course.title} 
+                        <img
+                          src={imgSrc}
+                          alt={course.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           onError={e => { e.target.src = fallbackImg; }}
                         />
                       );
                     }
                     return (
-                      <img 
-                        src={fallbackImg} 
-                        alt={course.title} 
+                      <img
+                        src={fallbackImg}
+                        alt={course.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     );
@@ -231,24 +345,28 @@ const MyCourses = () => {
                   </div>
                 </div>
 
-                {/* Certificate Section */}
-                <div className="mt-4">
-                  {certEligible ? (
+                <div className="mt-4 flex gap-2">
+                  {/* Start Course button */}
+                  <button
+                    onClick={() => navigate('/courses')}
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-sm"
+                  >
+                    <PlayCircle size={16} />
+                    Start Course
+                  </button>
+
+                  {isCompleted && (
                     <button
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all"
-                      onClick={() => alert('Certificate generation coming soon!')}
+                      onClick={() => openCertificateModal(course)}
+                      disabled={downloading === course.id}
+                      className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 text-sm disabled:opacity-60"
                     >
-                      <Award size={14} /> Generate Certificate
+                      {downloading === course.id ? (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <><Award size={16} /> Generate</>
+                      )}
                     </button>
-                  ) : (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-500">
-                      <Lock size={13} className="text-slate-400 shrink-0" />
-                      <span>
-                        {!withinWindow
-                          ? 'Certificate locked — 90-day window expired'
-                          : `Complete course to unlock (${progress}% done)`}
-                      </span>
-                    </div>
                   )}
                 </div>
               </div>

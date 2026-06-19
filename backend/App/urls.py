@@ -55,10 +55,13 @@ urlpatterns = [
     path('payment/',views.payment),
     path('cashfree/webhook/', views.cashfree_webhook),
     path('cashfree/verify/', views.verify_payment),
+    path('certificates/generate/', views.generate_certificate, name='generate_certificate'),
+    path('certificates/verify/<str:cert_id>/', views.verify_certificate, name='verify_certificate'),
 ]
 
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'online-classes', views.OnlineClassViewSet, basename='online-class')
+router.register(r'certificate-templates', views.CertificateTemplateViewSet, basename='certificate-template')
 
 urlpatterns += router.urls
