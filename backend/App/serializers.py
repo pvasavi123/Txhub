@@ -44,6 +44,7 @@ class StudentSerializer(serializers.ModelSerializer):
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField(source='user.full_name')
+    email = serializers.ReadOnlyField(source='user.email')
     assigned_batch_name = serializers.ReadOnlyField(source='assigned_batch.name')
     assigned_mentor_name = serializers.ReadOnlyField(source='assigned_mentor.name')
     imageUrl = serializers.SerializerMethodField()

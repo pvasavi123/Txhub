@@ -15,6 +15,57 @@ import frontendImg from "../assets/fronteend development.jpg";
 import pythonImg from "../assets/python full stack.jpg";
 import dataAnalyticsImg from "../assets/Data Analytics.jpg";
 import dataScienceImg from "../assets/dataScience.jpg";
+import backendImg from "../assets/backend development.jpg";
+import softImg from "../assets/soft.jpg";
+
+const getAssetImage = (title) => {
+  const t = (title || "").toLowerCase();
+  if (t.includes("mern")) return mernImg;
+  if (t.includes("react")) return reactImg;
+  if (t.includes("java")) return javaImg;
+  if (t.includes("python")) return pythonImg;
+  if (t.includes("aws") || t.includes("devops")) return awsImg;
+  if (t.includes("ml") || t.includes("machine")) return mlImg;
+  if (t.includes("ui") || t.includes("ux") || t.includes("figma")) return uiImg;
+  if (t.includes("data science") || t.includes("datascience")) return dataScienceImg;
+  if (t.includes("data") || t.includes("analytics")) return dataAnalyticsImg;
+  if (t.includes("front end") || t.includes("frontend")) return frontendImg;
+  if (t.includes("soft") || t.includes("skills") || t.includes("leadership") || t.includes("speaking")) return softImg;
+  if (t.includes("testing") || t.includes("qa") || t.includes("selenium") || t.includes("manual")) return "https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&q=80";
+  return null;
+};
+
+const getCourseFallbackImage = (title, category) => {
+  const t = (title || '').toLowerCase();
+  const c = (category || '').toLowerCase();
+  const h = title ? Math.abs(title.split('').reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0)) : 0;
+  
+  const pools = {
+    software: ['1517694712202-14dd9538aa97', '1555066931-4365d14bab8c', '1526374965328-7f61d4dc18c5'],
+    devops: ['1667372393119-3d4c48d07fc9', '1517077304055-6e89abbf09b0', '1451187580459-43490279c0fa'],
+    testing: ['1607799279861-4dd421887fb3', '1516321318423-f06f85e504b3', '1498050108023-c5249f4df085'],
+    design: ['1561070791-2526d30994b5', '1586717791821-3f44a563fa4c', '1454165804606-c3d57bc86b40'],
+    ai: ['1677442136019-21780ecad995', '1677442135703-1787eea5ce01', '1518770660439-4636190af475', '1550751827-4bd374c3f58b'],
+    data: ['1551288049-bebda4e38f71', '1460925895917-afdab827c52f', '1488590528505-98d2b5aba04b'],
+    default: ['1498050108023-c5249f4df085', '1488590528505-98d2b5aba04b', '1454165804606-c3d57bc86b40']
+  };
+
+  let pool = pools.default;
+  if (t.includes('react') || t.includes('javascript') || t.includes('python') || t.includes('java') || t.includes('mern') || t.includes('backend') || t.includes('frontend')) pool = pools.software;
+  else if (t.includes('aws') || t.includes('devops') || t.includes('docker') || t.includes('cloud')) pool = pools.devops;
+  else if (t.includes('testing') || t.includes('selenium') || t.includes('automation') || t.includes('qa')) pool = pools.testing;
+  else if (t.includes('figma') || t.includes('ui') || t.includes('ux') || t.includes('design')) pool = pools.design;
+  else if (t.includes('machine') || t.includes('ai') || t.includes('ml')) pool = pools.ai;
+  else if (t.includes('data') || t.includes('analytics') || t.includes('language processing')) pool = pools.data;
+  else if (c.includes('software')) pool = pools.software;
+  else if (c.includes('testing')) pool = pools.testing;
+  else if (c.includes('design')) pool = pools.design;
+  else if (c.includes('ai') || c.includes('machine')) pool = pools.ai;
+  else if (c.includes('devops')) pool = pools.devops;
+  else if (c.includes('data')) pool = pools.data;
+  
+  return `https://images.unsplash.com/photo-${pool[h % pool.length]}?q=80&w=600&h=300&fit=crop`;
+};
 
 /**
  * Detailed course data including all curricula, requirements, and metadata.
@@ -696,7 +747,7 @@ const CourseDetails = () => {
                  location: "Remote",
                  batchStart: "Flexible",
                  category: match.category || "Software Development",
-                 img: match.imageUrl ? (match.imageUrl.startsWith("http") ? match.imageUrl : `http://127.0.0.1:8000${match.imageUrl}`) : "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80",
+                 img: getAssetImage(match.title) || (match.imageUrl ? (match.imageUrl.startsWith("http") ? match.imageUrl : `http://127.0.0.1:8000${match.imageUrl}`) : getCourseFallbackImage(match.title, match.category)),
                  instructor: "TXhub Expert",
                  instructorBio: "Experienced industry professional with a track record of success.",
                  instructorImage: "https://randomuser.me/api/portraits/men/32.jpg",

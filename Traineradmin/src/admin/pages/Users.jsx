@@ -6,13 +6,79 @@ import {
 
 import { useAdmin } from '../context/AdminContext';
 
+const getAssignmentStatus = (courses) => {
+  if (!courses || courses.length === 0) {
+    return {
+      status: 'Not Assigned',
+      text: 'No Courses Enrolled',
+      style: 'bg-rose-50 text-rose-600 border-rose-100'
+    };
+  }
+
+  let fullyAssignedCount = 0;
+  let hasAnyAssignment = false;
+
+  courses.forEach(c => {
+    const hasBatch = !!c.assigned_batch;
+    const hasMentor = !!c.assigned_mentor;
+    if (hasBatch && hasMentor) {
+      fullyAssignedCount++;
+    }
+    if (hasBatch || hasMentor) {
+      hasAnyAssignment = true;
+    }
+  });
+
+  const total = courses.length;
+
+  if (fullyAssignedCount === total) {
+    return {
+      status: 'Assigned',
+      text: `✓ ${total} Course Assignment${total > 1 ? 's' : ''}`,
+      style: 'bg-emerald-50 text-emerald-600 border-emerald-100'
+    };
+  } else if (fullyAssignedCount > 0 || hasAnyAssignment) {
+    return {
+      status: 'Partially Assigned',
+      text: `⚠ ${fullyAssignedCount}/${total} Courses Assigned`,
+      style: 'bg-amber-50 text-amber-600 border-amber-100'
+    };
+  } else {
+    return {
+      status: 'Not Assigned',
+      text: `⚠ 0/${total} Courses Assigned`,
+      style: 'bg-rose-50 text-rose-600 border-rose-100'
+    };
+  }
+};
+
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [batches, setBatches] = useState([]);
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeAssignmentUser, setActiveAssignmentUser] = useState(null);
+  
+  // Redesigned panel states
+  const [activeCourseEnrollmentId, setActiveCourseEnrollmentId] = useState(null);
+  const [localCourses, setLocalCourses] = useState([]);
+  const [batchSearch, setBatchSearch] = useState('');
+  const [mentorSearch, setMentorSearch] = useState('');
+  const [savingAssignment, setSavingAssignment] = useState(false);
+
   const { markAsSeen } = useAdmin();
+
+  useEffect(() => {
+    if (activeAssignmentUser) {
+      setLocalCourses(activeAssignmentUser.courses || []);
+      setActiveCourseEnrollmentId(activeAssignmentUser.courses?.[0]?.enrollmentId || null);
+      setBatchSearch('');
+      setMentorSearch('');
+    } else {
+      setLocalCourses([]);
+      setActiveCourseEnrollmentId(null);
+    }
+  }, [activeAssignmentUser]);
 
   useEffect(() => {
     markAsSeen();
@@ -22,9 +88,12 @@ const Users = () => {
         const result = await response.json();
         const dataArray = Array.isArray(result) ? result : result.data;
 
-        const formatted = (dataArray || []).map(u => {
-          let itemsArray = [];
+        const grouped = {};
 
+        (dataArray || []).forEach(u => {
+          const emailKey = (u.email || '').toLowerCase().trim() || `no-email-${u.id}`;
+          
+          let itemsArray = [];
           if (Array.isArray(u.items)) {
             itemsArray = u.items;
           } else if (typeof u.items === "string") {
@@ -37,26 +106,44 @@ const Users = () => {
           } else if (u.items && typeof u.items === "object") {
             itemsArray = [u.items];
           }
-
           if (!Array.isArray(itemsArray)) itemsArray = [];
 
           const totalFee = Number(u.total_fee) || 0;
           const paidAmount = Number(u.amount_paid) || 0;
 
-          return {
-            id: u.id,
-            name: u.full_name || "New Student", // Assuming full_name exists, fallback to firstItem title
-            courses: itemsArray,
-            type: u.enrollment_type || "Course",
-            mode: u.mode || "Offline",
-            totalFee,
-            paidAmount,
+          const courseDetail = {
+            enrollmentId: u.id,
+            title: u.title || (itemsArray[0]?.title) || "Unknown Course",
             assigned_batch: u.assigned_batch || "",
             assigned_mentor: u.assigned_mentor || "",
           };
+
+          if (!grouped[emailKey]) {
+            grouped[emailKey] = {
+              id: u.user || u.id, // UserRegister ID, fallback to enrollment ID
+              enrollmentIds: [u.id],
+              name: u.full_name || "New Student",
+              email: u.email || "",
+              courses: [courseDetail],
+              type: u.enrollment_type || "Course",
+              mode: u.mode || "Offline",
+              totalFee,
+              paidAmount,
+            };
+          } else {
+            grouped[emailKey].totalFee += totalFee;
+            grouped[emailKey].paidAmount += paidAmount;
+            grouped[emailKey].enrollmentIds.push(u.id);
+            
+            // Avoid duplicate courses on the same student record
+            const exists = grouped[emailKey].courses.some(c => c.title.toLowerCase().trim() === courseDetail.title.toLowerCase().trim());
+            if (!exists) {
+              grouped[emailKey].courses.push(courseDetail);
+            }
+          }
         });
 
-        setUsers(formatted);
+        setUsers(Object.values(grouped));
       } catch (err) {
         console.error("Fetch Error:", err);
       } finally {
@@ -81,32 +168,50 @@ const Users = () => {
     fetchBatchesAndMentors();
   }, []);
 
-  const handleAssign = async (userId, batchId, mentorId) => {
+  const handleSaveAssignment = async () => {
+    if (!activeCourseEnrollmentId) return;
+    const activeCourse = localCourses.find(c => c.enrollmentId === activeCourseEnrollmentId);
+    if (!activeCourse) return;
+
+    setSavingAssignment(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/enrollments/${userId}/assign/`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/enrollments/${activeCourseEnrollmentId}/assign/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ batch_id: batchId, mentor_id: mentorId }),
+        body: JSON.stringify({
+          batch_id: activeCourse.assigned_batch || "",
+          mentor_id: activeCourse.assigned_mentor || "",
+        }),
       });
       if (response.ok) {
+        // Sync with the parent users list state
         setUsers(prev => prev.map(u => {
-          if (u.id === userId) {
-            const updatedUser = { ...u, assigned_batch: batchId, assigned_mentor: mentorId };
-            if (activeAssignmentUser && activeAssignmentUser.id === userId) {
-              setActiveAssignmentUser(updatedUser);
-            }
-            return updatedUser;
+          if (u.id === activeAssignmentUser.id) {
+            const updatedCourses = u.courses.map(c => {
+              if (c.enrollmentId === activeCourseEnrollmentId) {
+                return {
+                  ...c,
+                  assigned_batch: activeCourse.assigned_batch,
+                  assigned_mentor: activeCourse.assigned_mentor,
+                };
+              }
+              return c;
+            });
+            return { ...u, courses: updatedCourses };
           }
           return u;
         }));
+        alert("Assignment saved successfully! ✅");
       } else {
-        alert("Failed to assign batch/mentor.");
+        alert("Failed to save assignment.");
       }
     } catch (err) {
       console.error("Error assigning:", err);
-      alert("Failed to assign batch/mentor.");
+      alert("Failed to save assignment.");
+    } finally {
+      setSavingAssignment(false);
     }
   };
 
@@ -283,71 +388,26 @@ const Users = () => {
     </div>
   </td>
 
-  {/* Mentor & Batch */}
   <td className="px-6 py-5">
     {(() => {
-      const batchObj = batches.find(
-        (b) => String(b.id) === String(u.assigned_batch)
-      );
-
-      const mentorObj = mentors.find(
-        (m) => String(m.id) === String(u.assigned_mentor)
-      );
-
-      const hasAssignment =
-        u.assigned_batch || u.assigned_mentor;
-
+      const assignment = getAssignmentStatus(u.courses);
       return (
-        <div className="flex flex-col gap-2 text-sm">
+        <div className="flex flex-col gap-2">
           <div>
-            <span className="text-slate-500">
-              Batch:
-            </span>{" "}
-            <span
-              className={
-                u.assigned_batch
-                  ? "font-semibold text-blue-600"
-                  : "text-slate-400 italic"
-              }
-            >
-              {batchObj?.name || "Unassigned"}
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${assignment.style}`}>
+              {assignment.status}
             </span>
           </div>
-
-          <div>
-            <span className="text-slate-500">
-              Mentor:
-            </span>{" "}
-            <span
-              className={
-                u.assigned_mentor
-                  ? "font-semibold text-emerald-600"
-                  : "text-slate-400 italic"
-              }
-            >
-              {mentorObj?.name || "Unassigned"}
-            </span>
-          </div>
+          <span className="text-[11px] font-semibold text-slate-500 block leading-tight">
+            {assignment.text}
+          </span>
 
           <button
             onClick={() => setActiveAssignmentUser(u)}
-            className={`mt-2 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-medium transition-all ${
-              hasAssignment
-                ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                : "bg-blue-50 hover:bg-blue-100 text-blue-600"
-            }`}
+            className="mt-2 w-max flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100 transition-all active:scale-95 shadow-sm"
           >
-            {hasAssignment ? (
-              <>
-                <Eye size={14} />
-                Manage Assignment
-              </>
-            ) : (
-              <>
-                <Edit2 size={14} />
-                Assign Mentor
-              </>
-            )}
+            <Edit2 size={12} />
+            Manage Assignment
           </button>
         </div>
       );
@@ -454,44 +514,27 @@ const Users = () => {
                       <span className="truncate">{u.courses[0]?.title || "N/A"}</span>
                     </div>
                   </div>
-                  <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100/50">
+                  <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100/50 col-span-2">
                     <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Assignment</p>
                     {(() => {
-                      const batchObj = batches.find(b => String(b.id) === String(u.assigned_batch));
-                      const mentorObj = mentors.find(m => String(m.id) === String(u.assigned_mentor));
-                      const hasAssignment = u.assigned_batch || u.assigned_mentor;
-
+                      const assignment = getAssignmentStatus(u.courses);
                       return (
-                        <div className="flex flex-col gap-1.5 text-xs text-slate-700">
-                          <div className="flex items-center gap-1">
-                            <span className="font-bold text-slate-400">Batch:</span>
-                            <span className={u.assigned_batch ? "font-black text-blue-600 truncate max-w-[120px]" : "font-medium text-slate-400 italic"}>
-                              {batchObj?.name || 'Unassigned'}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${assignment.style}`}>
+                              {assignment.status}
+                            </span>
+                            <span className="text-[11px] font-semibold text-slate-500 leading-tight">
+                              {assignment.text}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="font-bold text-slate-400">Mentor:</span>
-                            <span className={u.assigned_mentor ? "font-black text-emerald-600 truncate max-w-[120px]" : "font-medium text-slate-400 italic"}>
-                              {mentorObj?.name || 'Unassigned'}
-                            </span>
-                          </div>
+
                           <button
                             onClick={() => setActiveAssignmentUser(u)}
-                            className={`mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 px-3 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 shadow-sm ${
-                              hasAssignment 
-                                ? 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600'
-                                : 'bg-blue-50 border-blue-100 hover:bg-blue-100 text-blue-600'
-                            }`}
+                            className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100 transition-all active:scale-95 shadow-sm"
                           >
-                            {hasAssignment ? (
-                              <>
-                                <Eye size={12} /> View & Manage
-                              </>
-                            ) : (
-                              <>
-                                <Edit2 size={12} /> Assign Now
-                              </>
-                            )}
+                            <Edit2 size={12} />
+                            Manage Assignment
                           </button>
                         </div>
                       );
@@ -517,218 +560,322 @@ const Users = () => {
       </div>
 
       {/* DETAIL & EDIT MODAL */}
-      {activeAssignmentUser && (
+      {activeAssignmentUser && activeCourseEnrollmentId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#F4F7FE] w-full max-w-3xl rounded-[2.5rem] shadow-2xl border border-blue-100 overflow-hidden transform scale-100 transition-all duration-300 flex flex-col max-h-[90vh]">
+          <div className="bg-white w-full max-w-4xl rounded-[1.5rem] shadow-2xl border border-slate-100 overflow-hidden transform scale-100 transition-all duration-300 flex flex-col max-h-[92vh]">
             
             {/* Modal Header */}
-            <div className="relative bg-gradient-to-r from-blue-600 to-blue-600 p-6 text-white shrink-0">
-              <button
-                onClick={() => setActiveAssignmentUser(null)}
-                className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all active:scale-90"
-              >
-                <X size={16} />
-              </button>
+            <div className="bg-slate-50/50 p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center font-black text-xl border border-white/20">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
                   {activeAssignmentUser.name.charAt(0)}
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Student Assignment Panel
                   </p>
-                  <h3 className="text-xl font-black mt-0.5">
+                  <h3 className="text-xl font-bold text-slate-800">
                     {activeAssignmentUser.name}
                   </h3>
+                  <p className="text-xs text-slate-500">
+                    ID: {activeAssignmentUser.id} &bull; {activeAssignmentUser.email}
+                  </p>
                 </div>
               </div>
+              <button
+                onClick={() => setActiveAssignmentUser(null)}
+                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-all"
+              >
+                <X size={20} />
+              </button>
             </div>
 
             {/* Modal Scrollable Content */}
             <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
               
-              {/* Student Course Specs */}
-              <div className="bg-white p-4 rounded-2xl border border-blue-50 shadow-sm flex flex-col gap-2">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Enrolled Course / Specialization</span>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {activeAssignmentUser.courses.map((course, i) => (
-                    <div
-                      key={i}
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase border border-blue-100"
-                    >
-                      <Cpu size={12} /> {course.title}
-                    </div>
-                  ))}
+              {/* 1. COURSE SELECTION SECTION */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Enrolled Courses (Select one to manage)</span>
+                <div className="flex flex-wrap gap-2.5">
+                  {localCourses.map((c) => {
+                    const isActive = c.enrollmentId === activeCourseEnrollmentId;
+                    return (
+                      <button
+                        key={c.enrollmentId}
+                        onClick={() => {
+                          setActiveCourseEnrollmentId(c.enrollmentId);
+                          setBatchSearch('');
+                          setMentorSearch('');
+                        }}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 ${
+                          isActive
+                            ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/20 border border-transparent translate-y-[-1px]"
+                            : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Cpu size={14} className={isActive ? "text-white" : "text-slate-400"} />
+                        {c.title}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Two-Column Form and details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* COLUMN 1: BATCH */}
-                {(() => {
-                  const batchObj = batches.find(b => String(b.id) === String(activeAssignmentUser.assigned_batch));
-                  return (
-                    <div className="bg-white p-5 rounded-3xl border border-blue-50 shadow-sm flex flex-col gap-4">
+              {/* 2. SELECTED COURSE DETAILS */}
+              {(() => {
+                const activeCourse = localCourses.find(c => c.enrollmentId === activeCourseEnrollmentId) || {};
+                const activeBatchObj = batches.find(b => String(b.id) === String(activeCourse.assigned_batch));
+                const activeMentorObj = mentors.find(m => String(m.id) === String(activeCourse.assigned_mentor));
+
+                const handleLocalBatchChange = (newBatchId) => {
+                  setLocalCourses(prev => prev.map(c => {
+                    if (c.enrollmentId === activeCourseEnrollmentId) {
+                      return { ...c, assigned_batch: newBatchId };
+                    }
+                    return c;
+                  }));
+                };
+
+                const handleLocalMentorChange = (newMentorId) => {
+                  setLocalCourses(prev => prev.map(c => {
+                    if (c.enrollmentId === activeCourseEnrollmentId) {
+                      return { ...c, assigned_mentor: newMentorId };
+                    }
+                    return c;
+                  }));
+                };
+
+                return (
+                  <>
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0">
                       <div>
-                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                          <span className="w-1.5 h-3 bg-blue-600 rounded-full"></span>
-                          Batch Assignment
-                        </h4>
-                        
-                        <select
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium"
-                          value={activeAssignmentUser.assigned_batch}
-                          onChange={(e) => handleAssign(activeAssignmentUser.id, e.target.value, activeAssignmentUser.assigned_mentor)}
-                        >
-                          <option value="">Select Batch...</option>
-                          {batches.map(b => (
-                            <option key={b.id} value={b.id}>
-                              {b.name} ({b.course || 'No Course'})
-                            </option>
-                          ))}
-                        </select>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Selected Course</span>
+                        <h4 className="text-base font-bold text-slate-800 mt-0.5">{activeCourse.title}</h4>
                       </div>
-
-                      {batchObj ? (
-                        <div className="space-y-4 pt-2 border-t border-slate-100 flex-1 flex flex-col">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Start Date</span>
-                              <span className="text-xs font-bold text-slate-800 block mt-1">
-                                {batchObj.startDate 
-                                  ? new Date(batchObj.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-                                  : 'TBD'}
-                              </span>
-                            </div>
-                            <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Status</span>
-                              <span className="inline-block text-[9px] font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded mt-1 border border-emerald-100">Active</span>
-                            </div>
-                          </div>
-
-                          <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Assigned Mentor</span>
-                            <span className="text-xs font-bold text-blue-600 block mt-1">
-                              {getMentorName(batchObj)}
-                            </span>
-                          </div>
-
-                          <div>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Enrolled Students ({batchObj.students?.length || 0})</span>
-                            {batchObj.students && batchObj.students.length > 0 ? (
-                              <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                                {batchObj.students.map(student => (
-                                  <div key={student.id} className="flex justify-between items-center bg-slate-50/50 hover:bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100/50 text-[11px] transition-colors">
-                                    <span className="font-bold text-slate-800 truncate max-w-[100px]">{student.name}</span>
-                                    <span className="text-[9px] text-slate-400 truncate max-w-[110px]">{student.email}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-[11px] text-slate-400 italic bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 text-center">No students enrolled in this batch.</p>
-                            )}
-                          </div>
+                      <div className="flex flex-wrap gap-2.5">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold">
+                          <span className="text-slate-400">Batch:</span>
+                          {activeCourse.assigned_batch ? (
+                            <span className="text-blue-600 font-bold">Assigned</span>
+                          ) : (
+                            <span className="text-slate-400 italic">Not Assigned</span>
+                          )}
                         </div>
-                      ) : (
-                        <div className="py-6 text-center text-slate-400 bg-slate-50/50 border border-dashed border-slate-200/50 rounded-2xl">
-                          Select a batch from the dropdown above to view details.
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold">
+                          <span className="text-slate-400">Mentor:</span>
+                          {activeCourse.assigned_mentor ? (
+                            <span className="text-emerald-600 font-bold">Assigned</span>
+                          ) : (
+                            <span className="text-slate-400 italic">Not Assigned</span>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
-                  );
-                })()}
 
-                {/* COLUMN 2: MENTOR */}
-                {(() => {
-                  const mentorObj = mentors.find(m => String(m.id) === String(activeAssignmentUser.assigned_mentor));
-                  return (
-                    <div className="bg-white p-5 rounded-3xl border border-blue-50 shadow-sm flex flex-col gap-4">
-                      <div>
-                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                          <span className="w-1.5 h-3 bg-emerald-600 rounded-full"></span>
-                          Mentor Assignment
-                        </h4>
-                        
-                        <select
-                          className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium"
-                          value={activeAssignmentUser.assigned_mentor}
-                          onChange={(e) => handleAssign(activeAssignmentUser.id, activeAssignmentUser.assigned_batch, e.target.value)}
-                        >
-                          <option value="">Select Mentor...</option>
-                          {mentors
-                            .filter(m => m.is_active)
-                            .map(m => (
-                              <option key={m.id} value={m.id}>
-                                {m.name} ({m.assigned_course || 'All Courses'})
-                              </option>
-                            ))
-                          }
-                        </select>
-                      </div>
-
-                      {mentorObj ? (
-                        <div className="space-y-4 pt-2 border-t border-slate-100 flex-1 flex flex-col">
-                          <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Email Contact</span>
-                            <span className="text-xs font-bold text-slate-800 block mt-1 break-all">{mentorObj.email || 'N/A'}</span>
+                    {/* 3. ASSIGNMENT CARDS */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      {/* LEFT CARD: BATCH */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col gap-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-800 mb-2.5 flex items-center gap-1.5">
+                            <span className="w-1.5 h-3.5 bg-blue-600 rounded-full"></span>
+                            Batch Assignment
+                          </h4>
+                          
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              placeholder="Search batches..."
+                              value={batchSearch}
+                              onChange={(e) => setBatchSearch(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium transition-all"
+                            />
+                            <select
+                              className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium bg-white"
+                              value={activeCourse.assigned_batch || ""}
+                              onChange={(e) => handleLocalBatchChange(e.target.value)}
+                            >
+                              <option value="">Select Batch...</option>
+                              {batches
+                                .filter(b => b.name.toLowerCase().includes(batchSearch.toLowerCase()) || (b.course && b.course.toLowerCase().includes(batchSearch.toLowerCase())))
+                                .map(b => (
+                                  <option key={b.id} value={b.id}>
+                                    {b.name} ({b.course || 'No Course'})
+                                  </option>
+                                ))
+                              }
+                            </select>
                           </div>
+                        </div>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Course Scope</span>
-                              <span className="text-xs font-bold text-slate-800 block mt-1 truncate" title={mentorObj.assigned_course || 'All Courses'}>{mentorObj.assigned_course || 'All Courses'}</span>
-                            </div>
-                            <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Status</span>
-                              <div>
-                                <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded mt-1 border ${
-                                  mentorObj.is_active 
-                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                    : 'bg-slate-100 text-slate-500 border-slate-200'
-                                }`}>
-                                  {mentorObj.is_active ? 'Active' : 'Inactive'}
+                        {activeBatchObj ? (
+                          <div className="space-y-4 pt-3 border-t border-slate-100 flex-1 flex flex-col">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Start Date</span>
+                                <span className="text-xs font-bold text-slate-800 block mt-1">
+                                  {activeBatchObj.startDate 
+                                    ? new Date(activeBatchObj.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                                    : 'TBD'}
                                 </span>
                               </div>
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Status</span>
+                                <span className="inline-block text-[9px] font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded mt-1 border border-emerald-100">Active</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Batch Mentor</span>
+                              <span className="text-xs font-bold text-blue-600 block mt-1">
+                                {getMentorName(activeBatchObj)}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Enrolled Students ({activeBatchObj.students?.length || 0})</span>
+                              {activeBatchObj.students && activeBatchObj.students.length > 0 ? (
+                                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                                  {activeBatchObj.students.map(student => (
+                                    <div key={student.id} className="flex justify-between items-center bg-slate-50 hover:bg-slate-100/50 px-3 py-1.5 rounded-lg border border-slate-100/50 text-[11px] transition-colors">
+                                      <span className="font-bold text-slate-800 truncate max-w-[120px]">{student.name}</span>
+                                      <span className="text-[9px] text-slate-400 truncate max-w-[120px]">{student.email}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-[11px] text-slate-400 italic bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 text-center">No students enrolled in this batch.</p>
+                              )}
                             </div>
                           </div>
+                        ) : (
+                          <div className="py-12 text-center text-slate-400 bg-slate-50/50 border border-dashed border-slate-200/50 rounded-2xl flex-1 flex flex-col justify-center items-center">
+                            <Layers size={32} className="text-slate-300 mb-2" />
+                            <p className="text-xs font-semibold text-slate-500">No Batch Selected</p>
+                            <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">Choose a batch from the dropdown above to assign.</p>
+                          </div>
+                        )}
+                      </div>
 
-                          <div>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Assigned Students ({mentorObj.students?.length || 0})</span>
-                            {mentorObj.students && mentorObj.students.length > 0 ? (
-                              <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                                {mentorObj.students.map(student => (
-                                  <div key={student.id} className="flex justify-between items-center bg-slate-50/50 hover:bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100/50 text-[11px] transition-colors">
-                                    <span className="font-bold text-slate-800 truncate max-w-[100px]">{student.name}</span>
-                                    <span className="text-[9px] text-slate-400 truncate max-w-[110px]">{student.email}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-[11px] text-slate-400 italic bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 text-center">No students assigned to this mentor.</p>
-                            )}
+                      {/* RIGHT CARD: MENTOR */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col gap-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-800 mb-2.5 flex items-center gap-1.5">
+                            <span className="w-1.5 h-3.5 bg-emerald-600 rounded-full"></span>
+                            Mentor Assignment
+                          </h4>
+                          
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              placeholder="Search mentors..."
+                              value={mentorSearch}
+                              onChange={(e) => setMentorSearch(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium transition-all"
+                            />
+                            <select
+                              className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium bg-white"
+                              value={activeCourse.assigned_mentor || ""}
+                              onChange={(e) => handleLocalMentorChange(e.target.value)}
+                            >
+                              <option value="">Select Mentor...</option>
+                              {mentors
+                                .filter(m => m.is_active && (m.name.toLowerCase().includes(mentorSearch.toLowerCase()) || (m.assigned_course && m.assigned_course.toLowerCase().includes(mentorSearch.toLowerCase()))))
+                                .map(m => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.name} ({m.assigned_course || 'All Courses'})
+                                  </option>
+                                ))
+                              }
+                            </select>
                           </div>
                         </div>
-                      ) : (
-                        <div className="py-6 text-center text-slate-400 bg-slate-50/50 border border-dashed border-slate-200/50 rounded-2xl">
-                          Select a mentor from the dropdown above to view details.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
 
-              </div>
+                        {activeMentorObj ? (
+                          <div className="space-y-4 pt-3 border-t border-slate-100 flex-1 flex flex-col">
+                            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm border border-emerald-100">
+                                {activeMentorObj.name.charAt(0)}
+                              </div>
+                              <div>
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block font-sans">Assigned Mentor Profile</span>
+                                <span className="text-xs font-bold text-slate-800 block mt-0.5">{activeMentorObj.name}</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Email Contact</span>
+                              <span className="text-xs font-bold text-slate-800 block mt-1 break-all">{activeMentorObj.email || 'N/A'}</span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Course Scope</span>
+                                <span className="text-xs font-bold text-slate-800 block mt-1 truncate" title={activeMentorObj.assigned_course || 'All Courses'}>{activeMentorObj.assigned_course || 'All Courses'}</span>
+                              </div>
+                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block font-sans">Active Students</span>
+                                <span className="text-xs font-bold text-slate-800 block mt-1">{activeMentorObj.students?.length || 0} Assigned</span>
+                              </div>
+                            </div>
+
+                            <div>
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2 font-sans">Assigned Students ({activeMentorObj.students?.length || 0})</span>
+                              {activeMentorObj.students && activeMentorObj.students.length > 0 ? (
+                                <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                                  {activeMentorObj.students.map(student => (
+                                    <div key={student.id} className="flex justify-between items-center bg-slate-50 hover:bg-slate-100/50 px-3 py-1.5 rounded-lg border border-slate-100/50 text-[11px] transition-colors">
+                                      <span className="font-bold text-slate-800 truncate max-w-[120px]">{student.name}</span>
+                                      <span className="text-[9px] text-slate-400 truncate max-w-[120px]">{student.email}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-[11px] text-slate-400 italic bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 text-center">No students assigned to this mentor.</p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="py-12 text-center text-slate-400 bg-slate-50/50 border border-dashed border-slate-200/50 rounded-2xl flex-1 flex flex-col justify-center items-center">
+                            <User size={32} className="text-slate-300 mb-2" />
+                            <p className="text-xs font-semibold text-slate-500">No Mentor Selected</p>
+                            <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">Choose a mentor from the dropdown above to assign.</p>
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  </>
+                );
+              })()}
+
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-slate-50 px-6 py-4 flex justify-end shrink-0 border-t border-slate-100">
+            <div className="bg-slate-50 px-6 py-4 flex justify-between items-center shrink-0 border-t border-slate-100">
               <button
                 onClick={() => setActiveAssignmentUser(null)}
-                className="bg-[#0F172A] hover:bg-slate-800 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all active:scale-95 shadow-md"
+                className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all active:scale-95"
               >
-                Close Panel
+                Cancel
               </button>
+              
+              <div className="flex gap-2.5">
+                <button
+                  onClick={handleSaveAssignment}
+                  disabled={savingAssignment}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all active:scale-95 shadow-md shadow-indigo-500/10 disabled:opacity-50"
+                >
+                  {savingAssignment ? "Saving..." : "Save Assignment"}
+                </button>
+                <button
+                  onClick={() => setActiveAssignmentUser(null)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all active:scale-95 shadow-md shadow-emerald-500/10"
+                >
+                  Done
+                </button>
+              </div>
             </div>
 
           </div>

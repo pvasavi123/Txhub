@@ -12,6 +12,8 @@ import uiImg from "../../website/assets/ui_ux.jpg";
 import pythonImg from "../../website/assets/python full stack.jpg";
 import dataImg from "../../website/assets/Data Analytics.jpg";
 import mernImg from "../../website/assets/mern stack development.jpg";
+import frontendImg from "../../website/assets/fronteend development.jpg";
+import dataScienceImg from "../../website/assets/dataScience.jpg";
 import softImg from "../../website/assets/soft.jpg";
 
 // 90-day course duration
@@ -26,14 +28,18 @@ const getDaysElapsed = (enrolledAt) => {
 
 const getAssetImage = (title) => {
   const t = (title || "").toLowerCase();
-  if (t.includes("react") || t.includes("mern")) return reactImg;
+  if (t.includes("mern")) return mernImg;
+  if (t.includes("react")) return reactImg;
   if (t.includes("java")) return javaImg;
   if (t.includes("python")) return pythonImg;
   if (t.includes("aws") || t.includes("devops")) return awsImg;
   if (t.includes("ml") || t.includes("machine")) return mlImg;
   if (t.includes("ui") || t.includes("ux") || t.includes("figma")) return uiImg;
+  if (t.includes("data science") || t.includes("datascience")) return dataScienceImg;
   if (t.includes("data") || t.includes("analytics")) return dataImg;
-  if (t.includes("soft")) return softImg;
+  if (t.includes("front end") || t.includes("frontend")) return frontendImg;
+  if (t.includes("soft") || t.includes("skills") || t.includes("leadership") || t.includes("speaking")) return softImg;
+  if (t.includes("testing") || t.includes("qa") || t.includes("selenium") || t.includes("manual")) return "https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&q=80";
   return null;
 };
 
@@ -128,9 +134,8 @@ const MyCourses = () => {
       const data = await res.json();
 
       if (res.ok) {
-
         window.open(`http://127.0.0.1:8000${data.certificate_url}`, '_blank');
-
+        navigate('/student/certificates');
       } else {
 
         alert(data.error || 'Failed to generate certificate');

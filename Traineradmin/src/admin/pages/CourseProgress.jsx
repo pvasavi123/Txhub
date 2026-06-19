@@ -7,27 +7,34 @@ import {
   RefreshCw, FileText, Activity
 } from 'lucide-react';
 
+import awsImg from "../../../../frontend/src/website/assets/aws.jpg";
+import javaImg from "../../../../frontend/src/website/assets/java_full.jpg";
+import reactImg from "../../../../frontend/src/website/assets/react_full.jpg";
+import mlImg from "../../../../frontend/src/website/assets/ml.jpg";
+import uiImg from "../../../../frontend/src/website/assets/ui_ux.jpg";
+import mernImg from "../../../../frontend/src/website/assets/mern stack development.jpg";
+import frontendImg from "../../../../frontend/src/website/assets/fronteend development.jpg";
+import pythonImg from "../../../../frontend/src/website/assets/python full stack.jpg";
+import dataAnalyticsImg from "../../../../frontend/src/website/assets/Data Analytics.jpg";
+import dataScienceImg from "../../../../frontend/src/website/assets/dataScience.jpg";
+import softImg from "../../../../frontend/src/website/assets/soft.jpg";
+
 // ── Helpers ─────────────────────────────────────────────────────────────
 const getCourseImage = (title) => {
   const t = (title || '').toLowerCase();
-  if (t.includes('react') || t.includes('mern') || t.includes('mongodb'))
-    return 'http://localhost:5173/src/website/assets/react_full.jpg';
-  if (t.includes('java'))
-    return 'http://localhost:5173/src/website/assets/java_full.jpg';
-  if (t.includes('testing') || t.includes('qa') || t.includes('selenium'))
+  if (t.includes('mern')) return mernImg;
+  if (t.includes('react')) return reactImg;
+  if (t.includes('java')) return javaImg;
+  if (t.includes('aws') || t.includes('devops')) return awsImg;
+  if (t.includes('ml') || t.includes('learning') || t.includes('machine')) return mlImg;
+  if (t.includes('ui') || t.includes('ux') || t.includes('figma')) return uiImg;
+  if (t.includes('data science') || t.includes('science')) return dataScienceImg;
+  if (t.includes('data') || t.includes('analytics')) return dataAnalyticsImg;
+  if (t.includes('python')) return pythonImg;
+  if (t.includes('front end') || t.includes('frontend')) return frontendImg;
+  if (t.includes('soft') || t.includes('skills') || t.includes('leadership') || t.includes('speaking')) return softImg;
+  if (t.includes('testing') || t.includes('qa') || t.includes('selenium') || t.includes('manual'))
     return 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&q=80';
-  if (t.includes('aws') || t.includes('devops'))
-    return 'http://localhost:5173/src/website/assets/aws.jpg';
-  if (t.includes('learning') || t.includes('ml'))
-    return 'http://localhost:5173/src/website/assets/ml.jpg';
-  if (t.includes('ui/ux') || t.includes('figma'))
-    return 'http://localhost:5173/src/website/assets/ui_ux.jpg';
-  if (t.includes('science'))
-    return 'http://localhost:5173/src/website/assets/dataScience.jpg';
-  if (t.includes('analytics'))
-    return 'http://localhost:5173/src/website/assets/Data%20Analytics.jpg';
-  if (t.includes('python'))
-    return 'http://localhost:5173/src/website/assets/python%20full%20stack.jpg';
   return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80';
 };
 

@@ -57,6 +57,7 @@ urlpatterns = [
     path('cashfree/verify/', views.verify_payment),
     path('certificates/generate/', views.generate_certificate, name='generate_certificate'),
     path('certificates/verify/<str:cert_id>/', views.verify_certificate, name='verify_certificate'),
+    path('certificates/', views.get_user_certificates, name='get_user_certificates'),
 ]
 
 from rest_framework.routers import DefaultRouter

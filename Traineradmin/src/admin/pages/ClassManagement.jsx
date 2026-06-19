@@ -2,60 +2,87 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Clock, Plus, Trash2, X, RefreshCw, Image as ImageIcon, AlertCircle } from 'lucide-react';
 
+import awsImg from "../../../../frontend/src/website/assets/aws.jpg";
+import javaImg from "../../../../frontend/src/website/assets/java_full.jpg";
+import reactImg from "../../../../frontend/src/website/assets/react_full.jpg";
+import mlImg from "../../../../frontend/src/website/assets/ml.jpg";
+import uiImg from "../../../../frontend/src/website/assets/ui_ux.jpg";
+import mernImg from "../../../../frontend/src/website/assets/mern stack development.jpg";
+import frontendImg from "../../../../frontend/src/website/assets/fronteend development.jpg";
+import pythonImg from "../../../../frontend/src/website/assets/python full stack.jpg";
+import dataAnalyticsImg from "../../../../frontend/src/website/assets/Data Analytics.jpg";
+import dataScienceImg from "../../../../frontend/src/website/assets/dataScience.jpg";
+import softImg from "../../../../frontend/src/website/assets/soft.jpg";
+
 const API = 'http://127.0.0.1:8000/api';
 
-const DEFAULT_COURSES = [
-  { id: 'react-full-stack-development', title: 'React Full Stack Development', category: 'Software Development', duration: '3 Months', description: 'Master frontend and backend with React, Node.js, and MongoDB.', slug: 'react-full-stack-development' },
-  { id: 'java-full-stack', title: 'Java Full Stack', category: 'Software Development', duration: '3 Months', description: 'Complete Java enterprise development with Spring Boot and Hibernate.', slug: 'java-full-stack' },
-  { id: 'python-development', title: 'Python Development', category: 'Software Development', duration: '3 Months', description: 'Python programming from basics to web frameworks and data handling.', slug: 'python-development' },
-  { id: 'uiux-design', title: 'UI/UX Design', category: 'UI/UX Design', duration: '3 Months', description: 'Design premium user interfaces and experiences using Figma.', slug: 'uiux-design' },
-  { id: 'aiml', title: 'AI/ML', category: 'AI/ML', duration: '3 Months', description: 'Introduction to artificial intelligence, machine learning, and deep learning.', slug: 'aiml' },
-  { id: 'software-testing', title: 'Testing', category: 'Testing', duration: '3 Months', description: 'Software quality assurance, manual testing, automation with Selenium.', slug: 'software-testing' },
-  { id: 'devops', title: 'Devops', category: 'DevOps', duration: '3 Months', description: 'Build and deploy software using Docker, Kubernetes, AWS, and CI/CD.', slug: 'devops' },
-  { id: 'data-science', title: 'Data Science', category: 'Data Science', duration: '3 Months', description: 'Statistical analysis, data visualization, and predictive modeling.', slug: 'data-science' },
-  { id: 'soft-skills', title: 'Soft Skills', category: 'Soft Skills', duration: '1 Month', description: 'Improve professional communication and interview presentation skills.', slug: 'soft-skills' }
-];
-
-const CATEGORY_IMAGES = {
-  'software development': 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=600&h=300&fit=crop',
-  'testing': 'https://images.unsplash.com/photo-1607799279861-4dd421887fb3?q=80&w=600&h=300&fit=crop',
-  'ui/ux design': 'https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=600&h=300&fit=crop',
-  'ai/ml': 'https://images.unsplash.com/photo-1677442136019-21780efad99a?q=80&w=600&h=300&fit=crop',
-  'devops': 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?q=80&w=600&h=300&fit=crop',
-  'data science': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600&h=300&fit=crop',
-  'soft skills': 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=600&h=300&fit=crop',
-  'default': 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&h=300&fit=crop'
+const getAssetImage = (title) => {
+  const t = (title || "").toLowerCase();
+  if (t.includes("mern")) return mernImg;
+  if (t.includes("react")) return reactImg;
+  if (t.includes("java")) return javaImg;
+  if (t.includes("python")) return pythonImg;
+  if (t.includes("aws") || t.includes("devops")) return awsImg;
+  if (t.includes("ml") || t.includes("machine")) return mlImg;
+  if (t.includes("ui") || t.includes("ux") || t.includes("figma")) return uiImg;
+  if (t.includes("data science") || t.includes("datascience")) return dataScienceImg;
+  if (t.includes("data") || t.includes("analytics")) return dataAnalyticsImg;
+  if (t.includes("front end") || t.includes("frontend")) return frontendImg;
+  if (t.includes("soft") || t.includes("skills") || t.includes("leadership") || t.includes("speaking")) return softImg;
+  if (t.includes("testing") || t.includes("qa") || t.includes("selenium") || t.includes("manual")) return "https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&q=80";
+  return null;
 };
+
+const DEFAULT_COURSES = [
+  { id: 'react', title: 'React ', category: 'Software Development', duration: '3 Months', description: 'Master frontend and backend with React, Node.js, and MongoDB.', slug: 'react' },
+  { id: 'java-full-stack', title: 'Java Full Stack Development', category: 'Software Development', duration: '3 Months', description: 'Complete Java enterprise development with Spring Boot and Hibernate.', slug: 'java-full-stack' },
+  { id: 'python-development', title: 'Python Full Stack', category: 'Software Development', duration: '3 Months', description: 'Python programming from basics to web frameworks and data handling.', slug: 'python-development' },
+  { id: 'uiux-design', title: 'Figma UI/UX Complete Guide', category: 'UI/UX Design', duration: '3 Months', description: 'Design premium user interfaces and experiences using Figma.', slug: 'uiux-design' },
+  { id: 'aiml', title: 'Machine Learning', category: 'AI/ML', duration: '3 Months', description: 'Introduction to artificial intelligence, machine learning, and deep learning.', slug: 'aiml' },
+  { id: 'selenium-testing', title: 'Selenium Automation Testing', category: 'Testing', duration: '3 Months', description: 'Software quality assurance, automation with Selenium.', slug: 'selenium-testing' },
+  { id: 'manual-testing', title: 'Manual Testing', category: 'Testing', duration: '2 Months', description: 'Manual testing methodologies, test cases design, defect tracking.', slug: 'manual-testing' },
+  { id: 'devops', title: 'AWS & DevOps', category: 'DevOps', duration: '3 Months', description: 'Build and deploy software using Docker, Kubernetes, AWS, and CI/CD.', slug: 'devops' },
+  { id: 'data-science', title: 'Data Science Fundamentals', category: 'Data Science', duration: '3 Months', description: 'Statistical analysis, data visualization, and predictive modeling.', slug: 'data-science' },
+  { id: 'data-analytics', title: 'Data Analytics Masterclass', category: 'Data Science', duration: '3 Months', description: 'Business intelligence, data modeling, SQL and reporting tools.', slug: 'data-analytics' },
+  { id: 'mern-crash', title: 'MERN Stack Crash Course', category: 'Software Development', duration: '2 Months', description: 'Express, React, and MongoDB full stack crash course.', slug: 'mern-crash' },
+  { id: 'frontend-dev', title: 'Front End Web Development', category: 'Software Development', duration: '3 Months', description: 'HTML, CSS, JavaScript, and framework integration.', slug: 'frontend-dev' },
+  { id: 'adv-testing', title: 'Advanced Software Testing', category: 'Testing', duration: '3 Months', description: 'Advanced testing techniques and QA processes.', slug: 'adv-testing' },
+  { id: 'api-testing', title: 'API Testing with Postman', category: 'Testing', duration: '2 Months', description: 'REST API validation, writing automated collections in Postman.', slug: 'api-testing' },
+  { id: 'appium-testing', title: 'Mobile App Automation (Appium)', category: 'Testing', duration: '3 Months', description: 'Automating Android and iOS applications using Appium.', slug: 'appium-testing' },
+  { id: 'leadership', title: 'Leadership & Team Management', category: 'Soft Skills', duration: '1 Month', description: 'Professional leadership and organizational team building.', slug: 'leadership' },
+  { id: 'public-speaking', title: 'Public Speaking Mastery', category: 'Soft Skills', duration: '1 Month', description: 'Improve professional communication and public speaking presentation skills.', slug: 'public-speaking' }
+];
 
 const getCourseFallbackImage = (title, category) => {
   const t = (title || '').toLowerCase();
   const c = (category || '').toLowerCase();
+  const h = title ? Math.abs(title.split('').reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0)) : 0;
   
-  if (t.includes('react') || t.includes('mern') || t.includes('mongodb') || t.includes('frontend')) {
-    return 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=600&h=300&fit=crop';
-  }
-  if (t.includes('java')) {
-    return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=600&h=300&fit=crop';
-  }
-  if (t.includes('python')) {
-    return 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&h=300&fit=crop';
-  }
-  if (t.includes('aws') || t.includes('devops') || t.includes('docker') || t.includes('cloud')) {
-    return 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?q=80&w=600&h=300&fit=crop';
-  }
-  if (t.includes('testing') || t.includes('selenium') || t.includes('automation') || t.includes('qa')) {
-    return 'https://images.unsplash.com/photo-1607799279861-4dd421887fb3?q=80&w=600&h=300&fit=crop';
-  }
-  if (t.includes('figma') || t.includes('ui') || t.includes('ux') || t.includes('design')) {
-    return 'https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=600&h=300&fit=crop';
-  }
-  if (t.includes('machine') || t.includes('ai') || t.includes('ml')) {
-    return 'https://images.unsplash.com/photo-1677442136019-21780efad99a?q=80&w=600&h=300&fit=crop';
-  }
-  if (t.includes('data science') || t.includes('analytics')) {
-    return 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600&h=300&fit=crop';
-  }
-  return CATEGORY_IMAGES[c] || CATEGORY_IMAGES['default'];
+  const pools = {
+    software: ['1517694712202-14dd9538aa97', '1555066931-4365d14bab8c', '1526374965328-7f61d4dc18c5'],
+    devops: ['1667372393119-3d4c48d07fc9', '1517077304055-6e89abbf09b0', '1451187580459-43490279c0fa'],
+    testing: ['1607799279861-4dd421887fb3', '1516321318423-f06f85e504b3', '1498050108023-c5249f4df085'],
+    design: ['1561070791-2526d30994b5', '1586717791821-3f44a563fa4c', '1454165804606-c3d57bc86b40'],
+    ai: ['1677442136019-21780ecad995', '1677442135703-1787eea5ce01', '1518770660439-4636190af475', '1550751827-4bd374c3f58b'],
+    data: ['1551288049-bebda4e38f71', '1460925895917-afdab827c52f', '1488590528505-98d2b5aba04b'],
+    default: ['1498050108023-c5249f4df085', '1488590528505-98d2b5aba04b', '1454165804606-c3d57bc86b40']
+  };
+
+  let pool = pools.default;
+  if (t.includes('react') || t.includes('javascript') || t.includes('python') || t.includes('java') || t.includes('mern') || t.includes('backend') || t.includes('frontend')) pool = pools.software;
+  else if (t.includes('aws') || t.includes('devops') || t.includes('docker') || t.includes('cloud')) pool = pools.devops;
+  else if (t.includes('testing') || t.includes('selenium') || t.includes('automation') || t.includes('qa')) pool = pools.testing;
+  else if (t.includes('figma') || t.includes('ui') || t.includes('ux') || t.includes('design')) pool = pools.design;
+  else if (t.includes('machine') || t.includes('ai') || t.includes('ml')) pool = pools.ai;
+  else if (t.includes('data') || t.includes('analytics') || t.includes('language processing')) pool = pools.data;
+  else if (c.includes('software')) pool = pools.software;
+  else if (c.includes('testing')) pool = pools.testing;
+  else if (c.includes('design')) pool = pools.design;
+  else if (c.includes('ai') || c.includes('machine')) pool = pools.ai;
+  else if (c.includes('devops')) pool = pools.devops;
+  else if (c.includes('data')) pool = pools.data;
+  
+  return `https://images.unsplash.com/photo-${pool[h % pool.length]}?q=80&w=600&h=300&fit=crop`;
 };
 
 // Map course title → enrollment count from enrichment data
@@ -163,7 +190,7 @@ const ClassManagement = () => {
         body: JSON.stringify({
           title: form.title.trim(),
           description: form.description.trim(),
-          imageUrl: form.imageUrl.trim() || FALLBACK_IMG,
+          imageUrl: form.imageUrl.trim() || '',
           duration: form.duration.trim() || '12 Weeks',
         }),
       });
@@ -239,7 +266,8 @@ const ClassManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
           {courses.map((course) => {
             const fallback = getCourseFallbackImage(course.title, course.category);
-            const imgSrc = course.imageUrl ? (course.imageUrl.startsWith("http") ? course.imageUrl : `http://127.0.0.1:8000${course.imageUrl}`) : fallback;
+            const assetImg = getAssetImage(course.title);
+            const imgSrc = assetImg ? assetImg : (course.imageUrl ? (course.imageUrl.startsWith("http") ? course.imageUrl : `http://127.0.0.1:8000${course.imageUrl}`) : fallback);
             const count = studentCount(course);
             return (
               <div

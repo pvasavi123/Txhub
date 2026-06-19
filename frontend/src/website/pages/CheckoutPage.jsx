@@ -57,10 +57,10 @@ const CheckoutPage = () => {
 
   const [billingCountry, setBillingCountry] = useState("India");
   const [billingState, setBillingState] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [paymentMethod, setPaymentMethod] = useState("cashfree");
 
   // Advanced Enrollment State
-  const [batchDate, setBatchDate] = useState("04 May 2026");
+  const [batchDate, setBatchDate] = useState("");
   const [classType, setClassType] = useState("live"); // live | recorded
   const [enrollmentType, setEnrollmentType] = useState("full"); // full | slot
 
@@ -76,9 +76,12 @@ const CheckoutPage = () => {
 let totalToPay = 0;
 let summaryTitle = "";
 
+const livePrice = 4999;
+const recordedPrice = 4999;
+
 // FULL PAYMENT
 if (enrollmentType === "full") {
-  totalToPay = classType === "live" ? 4999 : 1999;
+  totalToPay = classType === "live" ? livePrice : recordedPrice;
   summaryTitle = "Full Payment";
 }
 
@@ -96,13 +99,13 @@ if (isBalancePayment) {
 
   // If balance payment, we use the original total for assessment displays
 // NEW PRICE BASED ON CLASS TYPE
-const actualPrice = classType === "live" ? 4999 : 1999;
+const actualPrice = classType === "live" ? livePrice : recordedPrice;
 
 // BASE ASSESSMENT (fake original price)
-const originalPriceBase = actualPrice * 4;
+const originalPriceBase = 9999;
 
 // DISCOUNT
-const discount = originalPriceBase - actualPrice;
+const discount = 5000;
 
 
 
@@ -210,11 +213,8 @@ const discount = originalPriceBase - actualPrice;
             <section className="space-y-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                  1. Enrollment options
+                  Enrollment options
                 </h2>
-                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                  Step 1 of {isBalancePayment ? "2" : "3"}
-                </span>
               </div>
 
               {/* Batch Date Selection */}
@@ -223,16 +223,13 @@ const discount = originalPriceBase - actualPrice;
                   <Calendar size={14} className="text-blue-500" /> Select Batch Start Date
                 </label>
                 <div className="relative max-w-sm">
-                  <select
+                  <input
+                    type="date"
                     value={batchDate}
                     onChange={(e) => setBatchDate(e.target.value)}
-                    className="w-full h-12 px-4 border-2 border-slate-200 rounded-xl appearance-none focus:border-blue-500 outline-none transition-colors font-bold text-slate-700 bg-slate-50/50"
-                  >
-                    <option>04 May 2026</option>
-                    <option>20 May 2026</option>
-                    <option>05 June 2026</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                    className="w-full h-12 px-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors font-bold text-slate-700 bg-slate-50/50"
+                    required
+                  />
                 </div>
               </div>
 
@@ -381,91 +378,7 @@ const discount = originalPriceBase - actualPrice;
               </section>
             )} */}
 
-            {/* Payment Method */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-2">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  {isBalancePayment ? "2. Payment method" : "2. Payment method"}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">
-                    <Lock size={10} /> Secure 128-bit
-                  </span>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                    Step {isBalancePayment ? "2 of 2" : "3 of 3"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="border-2 border-slate-200 rounded-[2rem] overflow-hidden divide-y-2 divide-slate-100 shadow-2xl shadow-slate-200/50">
-                {/* UPI Option */}
-                <label className={`flex items-center gap-4 p-6 cursor-pointer transition-all ${paymentMethod === 'upi' ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'}`}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="upi"
-                    checked={paymentMethod === 'upi'}
-                    onChange={() => setPaymentMethod('upi')}
-                    className="w-5 h-5 accent-blue-600"
-                  />
-                  <div className="flex-1 flex items-center justify-between">
-                    <span className="font-extrabold flex items-center gap-3 text-slate-800 uppercase tracking-wider text-sm">
-                      <Smartphone size={20} className="text-blue-600" /> UPI
-                    </span>
-                  </div>
-                </label>
-
-                {paymentMethod === 'upi' && (
-                  <div className="p-8 bg-blue-50/20 border-t-2 border-slate-200 animate-in fade-in slide-in-from-top-2 duration-500">
-                    <div className="flex gap-4 items-start">
-                      <div className="p-3 bg-white rounded-2xl shadow-sm border border-blue-50 shrink-0">
-                        <Zap className="text-blue-600" size={24} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800 leading-snug">Generate dynamic QR for instant payment</p>
-                        <p className="text-[12px] text-slate-500 mt-1 font-medium leading-relaxed italic">After clicking "Proceed", a unique QR code will be generated for your UPI transaction.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Cards Option */}
-                <label className={`flex items-center gap-4 p-6 cursor-pointer transition-all ${paymentMethod === 'card' ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'}`}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="card"
-                    checked={paymentMethod === 'card'}
-                    onChange={() => setPaymentMethod('card')}
-                    className="w-5 h-5 accent-blue-600"
-                  />
-                  <div className="flex-1 flex items-center justify-between">
-                    <span className="font-extrabold flex items-center gap-3 text-slate-800 uppercase tracking-wider text-sm">
-                      <CreditCard size={20} className="text-blue-600" /> Debit / Credit Cards
-                    </span>
-                    <div className="flex gap-2 grayscale-0 group">
-                      <div className="bg-slate-100 text-slate-500 px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest italic group-hover:text-blue-500 transition-colors">VISA</div>
-                      <div className="bg-slate-100 text-slate-500 px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest italic group-hover:text-blue-500 transition-colors">MASTERCARD</div>
-                    </div>
-                  </div>
-                </label>
-
-                {/* Net Banking */}
-                <label className={`flex items-center gap-4 p-6 cursor-pointer transition-all ${paymentMethod === 'netbanking' ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'}`}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="netbanking"
-                    checked={paymentMethod === 'netbanking'}
-                    onChange={() => setPaymentMethod('netbanking')}
-                    className="w-5 h-5 accent-blue-600"
-                  />
-                  <span className="font-extrabold flex items-center gap-3 text-slate-800 uppercase tracking-wider text-sm">
-                    <Library size={20} className="text-blue-600" /> Net Banking
-                  </span>
-                </label>
-              </div>
-            </section>
+            {/* Payment Method section removed - Flow goes directly to Cashfree */}
           </div>
 
           {/* RIGHT COLUMN - SUMMARY */}

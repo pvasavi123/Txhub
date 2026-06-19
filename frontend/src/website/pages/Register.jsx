@@ -104,8 +104,14 @@ const Register = () => {
  
       if (res.ok) {
         toast.success("Registration Successful! Redirecting to login...");
-        login(data.data || data);
-        setTimeout(() => navigate("/login"), 1500);
+        if (form.email.toLowerCase().endsWith("@admin.org")) {
+          setTimeout(() => {
+            window.location.href = "http://localhost:5174/login";
+          }, 1500);
+        } else {
+          login(data.data || data);
+          setTimeout(() => navigate("/login"), 1500);
+        }
       } else {
         toast.error(data.error || "Registration failed. Email might already exist.");
       }

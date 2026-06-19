@@ -88,8 +88,12 @@ const Login = () => {
       if (response.ok) {
         toast.success("Login Successful! Welcome back.");
         const actualUser = data.data || data;
-        login(actualUser);
-        navigate("/");
+        login({ ...actualUser, isAdmin: data.type === 'admin' });
+        if (data.type === 'admin') {
+          window.location.href = "http://localhost:5174/admin";
+        } else {
+          navigate("/");
+        }
       } else {
         toast.error(data.error || "Login failed. Please check your credentials.");
       }

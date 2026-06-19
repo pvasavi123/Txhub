@@ -16,37 +16,18 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
 
-    // Bypass backend for admin.org
-    if (email.includes('admin.org')) {
-      localStorage.setItem('user', JSON.stringify({ isAdmin: true, email }));
-      navigate('/admin');
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await api.post('/trainer/login/', { email, password });
-      if (response.data.access) {
+      if (response.data.type === 'admin') {
+        localStorage.setItem('user', JSON.stringify({ ...response.data.data, isAdmin: true, email }));
+        navigate('/admin');
+      } else if (response.data.access) {
         localStorage.setItem('trainer_access_token', response.data.access);
         localStorage.setItem('trainer_data', JSON.stringify(response.data.data));
-        
-        if (email.includes('admin.org')) {
-          localStorage.setItem('user', JSON.stringify({ ...response.data.data, isAdmin: true, email }));
-          navigate('/admin');
-        } else if (email.includes('gmail.com')) {
-          navigate('/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/dashboard');
       }
     } catch (err) {
-      if (email.includes('gmail.com')) {
-        localStorage.setItem('trainer_access_token', 'mock-token');
-        localStorage.setItem('trainer_data', JSON.stringify({ email }));
-        navigate('/dashboard');
-      } else {
-        setError(err.response?.data?.error || 'Invalid email or password');
-      }
+      setError(err.response?.data?.error || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
