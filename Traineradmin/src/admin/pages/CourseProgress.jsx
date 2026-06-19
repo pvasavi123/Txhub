@@ -91,7 +91,7 @@ const CourseProgress = () => {
           const match = courses.find(c => c.slug === courseId);
           if (match) { 
             setCourseTitle(match.title); 
-            setCourseImageUrl(match.imageUrl || '');
+            setCourseImageUrl(match.imageUrl ? (match.imageUrl.startsWith("http") ? match.imageUrl : `http://127.0.0.1:8000${match.imageUrl}`) : '');
             return; 
           }
         }

@@ -225,5 +225,8 @@ CACHES = {
     }
 }
 
+X_FRAME_OPTIONS = 'ALLOWALL'
+
+
 
 

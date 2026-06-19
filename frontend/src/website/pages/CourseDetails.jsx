@@ -35,7 +35,7 @@ const courseData = [
     batchStart: "04 May 2026",
     category: "Software Development",
     img: reactImg,
-    instructor: "John Developer",
+    // instructor: "John Developer",
     instructorBio: "Senior Full Stack Engineer with 10+ years of experience in React and Node.js ecosystems.",
     instructorImage: "https://randomuser.me/api/portraits/men/32.jpg",
     instructorCourses: [
@@ -672,6 +672,45 @@ const CourseDetails = () => {
   const [notification, setNotification] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
   const [courseLiveSessions, setCourseLiveSessions] = useState([]);
+  const [dbCourse, setDbCourse] = useState(null);
+
+  useEffect(() => {
+    if (parseInt(id) >= 1000) {
+      const fetchDbCourse = async () => {
+        try {
+          const res = await fetch("http://127.0.0.1:8000/api/courses-list/");
+          const data = await res.json();
+          if (res.ok) {
+            const match = data.find(c => (c.id + 1000).toString() === id);
+            if (match) {
+               setDbCourse({
+                 id: match.id + 1000,
+                 title: match.title,
+                 description: match.details || `Learn ${match.title} with expert instructors.`,
+                 price: match.price || "4,999",
+                 rating: "4.8",
+                 students: "New",
+                 language: "English",
+                 duration: match.duration || "Flexible",
+                 mode: "Online",
+                 location: "Remote",
+                 batchStart: "Flexible",
+                 category: match.category || "Software Development",
+                 img: match.imageUrl ? (match.imageUrl.startsWith("http") ? match.imageUrl : `http://127.0.0.1:8000${match.imageUrl}`) : "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80",
+                 instructor: "TXhub Expert",
+                 instructorBio: "Experienced industry professional with a track record of success.",
+                 instructorImage: "https://randomuser.me/api/portraits/men/32.jpg",
+                 learn: ["Core concepts and fundamentals", "Hands-on projects", "Industry best practices"],
+                 content: ["Introduction", "Core Modules", "Advanced Topics", "Final Project"],
+                 requirements: ["Basic computer skills", "Willingness to learn and practice"]
+               });
+            }
+          }
+        } catch (err) { console.error("DB course fetch failed"); }
+      };
+      fetchDbCourse();
+    }
+  }, [id]);
 
   useEffect(() => {
     const fetchEnrollmentsAndLive = async () => {
@@ -699,7 +738,7 @@ const CourseDetails = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
-  const course = courseData.find(c => c.id.toString() === id);
+  const course = courseData.find(c => c.id.toString() === id) || dbCourse;
 
   if (!course) {
     return (

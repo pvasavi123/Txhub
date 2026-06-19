@@ -96,8 +96,20 @@ const MyCourses = () => {
 
             return (
               <div key={course.id || idx} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col">
-                <div className="h-40 bg-indigo-50 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
-                  <BookOpen size={40} className="text-indigo-200" />
+                <div className="h-40 bg-slate-50 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden border border-slate-100">
+                  {course.imageUrl ? (
+                    <img 
+                      src={course.imageUrl} 
+                      alt={course.title} 
+                      className="w-full h-full object-cover" 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <BookOpen size={40} className="text-indigo-200" />
+                  )}
                   <div className="absolute top-3 right-3">
                     <span className={`px-2 py-1 text-[10px] font-bold rounded-lg ${isFullyPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                       {course.payment_status || "Pending"}

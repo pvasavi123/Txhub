@@ -134,7 +134,7 @@ const Hero = () => {
               </button>
 
               <Link to="/explore">
-                <button className="bg-white border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-xl font-bold hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 shadow-sm">
+                <button className="bg-blue-50 text-blue-600 px-8 py-4 rounded-xl font-bold hover:bg-blue-100 transition-all duration-300 shadow-sm">
                   Explore Hub
                 </button>
               </Link>

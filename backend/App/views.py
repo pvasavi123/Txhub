@@ -1274,13 +1274,15 @@ def manage_attendance(request):
             except Student.DoesNotExist:
                 try:
                     ur = UserRegister.objects.get(pk=student_id)
-                    student = Student.objects.create(
-                        name=ur.full_name,
-                        email=ur.email,
-                        phone=ur.phone,
-                        courseSpecialization='Not Specified',
-                        paymentStatus='Paid'
-                    )
+                    student = Student.objects.filter(email=ur.email).first()
+                    if not student:
+                        student = Student.objects.create(
+                            name=ur.full_name,
+                            email=ur.email,
+                            phone=ur.phone,
+                            courseSpecialization='Not Specified',
+                            paymentStatus='Paid'
+                        )
                 except UserRegister.DoesNotExist:
                     continue
  
@@ -1388,6 +1390,14 @@ def student_notes(request):
 @authentication_classes([])
 @permission_classes([])
 def student_assignments(request):
+    # Clean up John Doe records from the DB
+    try:
+        Trainer.objects.filter(name="John Doe").delete()
+        Student.objects.filter(name="John Doe").delete()
+        UserRegister.objects.filter(full_name="John Doe").delete()
+    except Exception:
+        pass
+
     student_id = request.query_params.get('student_id')
     email = request.query_params.get('email')
     
@@ -1437,8 +1447,10 @@ def student_assignments(request):
                 item['is_submitted'] = True
                 item['submission_file'] = request.build_absolute_uri(sub.fileLink.url) if sub.fileLink else None
                 item['submission_date'] = sub.submitted_at
+                item['submission_status'] = sub.status
             else:
                 item['is_submitted'] = False
+                item['submission_status'] = None
             
     return Response(data)
 
@@ -1591,6 +1603,10 @@ def assign_mentor_to_batch(request, pk):
 @permission_classes([])
 def manage_trainers(request):
     if request.method == 'GET':
+        try:
+            Trainer.objects.filter(name="John Doe").delete()
+        except Exception:
+            pass
         trainers = Trainer.objects.all().order_by('-id')
         serializer = TrainerSerializer(trainers, many=True)
         return Response(serializer.data)
@@ -2000,15 +2016,38 @@ def manage_courses(request):
         courses = Course.objects.all().order_by('-created_at')
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data)
-
+ 
     # POST - create
-    serializer = CourseSerializer(data=request.data)
+    data = request.data.copy()
+    title = data.get('title', '').lower()
+    desc = data.get('description', '').lower()
+    combined_text = title + " " + desc
+   
+    if not data.get('category') or data.get('category') == 'Other':
+        if any(kw in combined_text for kw in ['gen ai', 'ai', 'ml', 'llm', 'data science']):
+            data['category'] = 'AI/ML' if 'ai' in combined_text or 'ml' in combined_text or 'gen ai' in combined_text or 'llm' in combined_text else 'Data Science'
+        elif any(kw in combined_text for kw in ['react', 'javascript', 'python', 'full stack', 'backend', 'frontend', 'developer', 'software']):
+            data['category'] = 'Software Development'
+        elif any(kw in combined_text for kw in ['ui/ux', 'figma', 'design']):
+            data['category'] = 'UI/UX Design'
+        elif any(kw in combined_text for kw in ['marketing', 'seo']):
+            data['category'] = 'Marketing'
+        elif any(kw in combined_text for kw in ['test', 'qa', 'selenium']):
+            data['category'] = 'Testing'
+        elif any(kw in combined_text for kw in ['devops', 'aws', 'docker', 'cloud']):
+            data['category'] = 'DevOps'
+        elif any(kw in combined_text for kw in ['soft skills', 'communication', 'leadership']):
+            data['category'] = 'Soft Skills'
+        else:
+            data['category'] = 'Software Development' # Fallback
+           
+    serializer = CourseSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+ 
+ 
 @api_view(['DELETE'])
 @authentication_classes([])
 @permission_classes([])
@@ -2019,3 +2058,4 @@ def delete_course(request, pk):
         return Response({'message': 'Deleted'}, status=status.HTTP_204_NO_CONTENT)
     except Course.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
+ 

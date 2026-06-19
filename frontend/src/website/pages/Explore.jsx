@@ -259,6 +259,33 @@ const [selectedOption, setSelectedOption] = useState("");
   const { addToCart, isInCart } = useContext(CartContext);
   const { user, openAuthModal } = useContext(AuthContext); // Get user and modal trigger
   const [userEnrollments, setUserEnrollments] = useState([]);
+  const [dbCourses, setDbCourses] = useState([]);
+
+  useEffect(() => {
+    const fetchDbCourses = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/courses-list/");
+        const data = await res.json();
+        if (res.ok) {
+           const mappedDbCourses = data.map(c => ({
+             id: c.id + 1000, // Prevent ID collisions
+             title: c.title,
+             category: c.category || "Other",
+             level: "Online",
+             rating: "4.8",
+             students: "New",
+             price: c.price || "4,999",
+             img: c.imageUrl ? (c.imageUrl.startsWith("http") ? c.imageUrl : `http://127.0.0.1:8000${c.imageUrl}`) : "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80",
+             slug: c.slug
+           }));
+           setDbCourses(mappedDbCourses);
+        }
+      } catch (err) {
+        console.error("Failed to fetch DB courses:", err);
+      }
+    };
+    fetchDbCourses();
+  }, []);
 
   // useEffect(() => {
   //   const fetchEnrollments = async () => {
@@ -316,7 +343,9 @@ const [selectedOption, setSelectedOption] = useState("");
     return enrollment?.payment_status === "partial";
   };
 
-  const filteredCourses = allCourses.filter((course) => {
+  const combinedCourses = [...allCourses, ...dbCourses];
+
+  const filteredCourses = combinedCourses.filter((course) => {
     const cleanSearch = search.toLowerCase().trim();
 
     const matchesCategory =

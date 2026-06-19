@@ -2,19 +2,19 @@ import React, { useState, useContext } from "react";
 import { X, Mail, Lock, User, Phone, CheckCircle, ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { GoogleLogin } from "@react-oauth/google";
-
+ 
+ 
 const BASE_URL = "http://127.0.0.1:8000";
-
+ 
 const AuthModal = () => {
   const { isAuthModalOpen, closeAuthModal, login, modalView, setModalView } =
     useContext(AuthContext);
   const navigate = useNavigate();
-
+ 
   const isLoginView = modalView === "login";
   const toggleView = () =>
     setModalView(isLoginView ? "register" : "login");
-
+ 
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -22,12 +22,12 @@ const AuthModal = () => {
     password: "",
     confirm_password: "",
   });
-
+ 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
+ 
   if (!isAuthModalOpen) return null;
-
+ 
   const validateField = (name, value, currentForm) => {
     let errMsg = "";
     if (name === "full_name") {
@@ -58,19 +58,19 @@ const AuthModal = () => {
     }
     return errMsg;
   };
-
+ 
   const handleChange = (e) => {
     let { name, value } = e.target;
-
+ 
     if (name === 'full_name') {
       value = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 30);
     } else if (name === 'phone') {
       value = value.replace(/\D/g, '').slice(0, 10);
     }
-
+ 
     const newForm = { ...form, [name]: value };
     setForm(newForm);
-
+ 
     const errMsg = validateField(name, value, newForm);
     setErrors(prev => {
       const updatedErrors = { ...prev, [name]: errMsg };
@@ -80,37 +80,37 @@ const AuthModal = () => {
       return updatedErrors;
     });
   };
-
+ 
   const inputStyle = (field) =>
     `w-full pl-12 pr-4 py-4 rounded-xl border outline-none transition-all text-sm shadow-sm ${errors[field]
       ? "bg-red-50/50 border-red-300 focus:ring-2 focus:ring-red-100 text-red-900 placeholder:text-red-300"
       : "bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-gray-700"
     }`;
-
+ 
   // ✅ MAIN AUTH FUNCTION (LOGIN + REGISTER + ADMIN CHECK)
   const handleAuth = async (e) => {
     e.preventDefault();
-
+ 
     let newErrors = {};
     const fieldsToValidate = isLoginView ? ['email', 'password'] : ['full_name', 'email', 'phone', 'password', 'confirm_password'];
-
+ 
     fieldsToValidate.forEach(key => {
       const err = validateField(key, form[key], form);
       if (err) newErrors[key] = err;
     });
-
+ 
     setErrors(newErrors);
-
+ 
     if (Object.keys(newErrors).filter(k => newErrors[k]).length > 0) {
       alert("Please fix the validation errors");
       return;
     }
-
+ 
     setLoading(true);
-
+ 
     try {
       const endpoint = isLoginView ? "verify/" : "register/";
-
+ 
       const payload = isLoginView
         ? { email: form.email, password: form.password }
         : {
@@ -119,13 +119,13 @@ const AuthModal = () => {
           phone: form.phone,
           password: form.password,
         };
-
+ 
       if (!isLoginView && form.password !== form.confirm_password) {
         alert("Passwords do not match");
         setLoading(false);
         return;
       }
-
+ 
       const response = await fetch(
         `http://127.0.0.1:8000/api/${endpoint}`,
         {
@@ -134,9 +134,9 @@ const AuthModal = () => {
           body: JSON.stringify(payload),
         }
       );
-
+ 
       const data = await response.json();
-
+ 
       if (response.ok) {
         if (isLoginView) {
           const actualUser = data.data || data;
@@ -158,37 +158,9 @@ const AuthModal = () => {
       setLoading(false);
     }
   };
-
+ 
   // ✅ GOOGLE LOGIN
-  const handleGoogle = async (credentialResponse) => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/google/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          access_token: credentialResponse.credential,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        const actualUser = data.data || data;
-        login(actualUser);
-        closeAuthModal();
-        navigate("/");
-        alert("Google Login Successful");
-      } else {
-        alert(data.error || "Google login failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Google server error");
-    }
-  };
-
+ 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
       {/* Overlay */}
@@ -196,10 +168,10 @@ const AuthModal = () => {
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
         onClick={closeAuthModal}
       ></div>
-
+ 
       {/* Modal */}
       <div className="relative w-full max-w-lg bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border overflow-hidden">
-
+ 
         {/* Close */}
         <button
           onClick={closeAuthModal}
@@ -207,9 +179,9 @@ const AuthModal = () => {
         >
           <X size={22} />
         </button>
-
+ 
         <div className="p-8 md:p-10">
-
+ 
           {/* Header */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-black">
@@ -219,10 +191,10 @@ const AuthModal = () => {
               {isLoginView ? "Login to continue" : "Start your journey"}
             </p>
           </div>
-
+ 
           {/* Form */}
           <form onSubmit={handleAuth} className="space-y-4">
-
+ 
             {!isLoginView && (
               <div className="space-y-1">
                 <div className="relative">
@@ -240,7 +212,7 @@ const AuthModal = () => {
                 {errors.full_name && <p className="text-red-500 text-[11px] font-bold ml-2">{errors.full_name}</p>}
               </div>
             )}
-
+ 
             <div className="space-y-1">
               <div className="relative">
                 <Mail className={`absolute left-4 top-4 ${errors.email ? 'text-red-400' : 'text-gray-400'}`} />
@@ -256,7 +228,7 @@ const AuthModal = () => {
               </div>
               {errors.email && <p className="text-red-500 text-[11px] font-bold ml-2">{errors.email}</p>}
             </div>
-
+ 
             {!isLoginView && (
               <div className="space-y-1">
                 <div className="relative">
@@ -274,7 +246,7 @@ const AuthModal = () => {
                 {errors.phone && <p className="text-red-500 text-[11px] font-bold ml-2">{errors.phone}</p>}
               </div>
             )}
-
+ 
             <div className="space-y-1">
               <div className="relative">
                 <Lock className={`absolute left-4 top-4 ${errors.password ? 'text-red-400' : 'text-gray-400'}`} />
@@ -290,7 +262,7 @@ const AuthModal = () => {
               </div>
               {errors.password && <p className="text-red-500 text-[11px] font-bold ml-2">{errors.password}</p>}
             </div>
-
+ 
             {isLoginView && (
               <div className="flex justify-end pr-2">
                 <Link
@@ -302,7 +274,7 @@ const AuthModal = () => {
                 </Link>
               </div>
             )}
-
+ 
             {!isLoginView && (
               <div className="space-y-1">
                 <div className="relative">
@@ -320,7 +292,7 @@ const AuthModal = () => {
                 {errors.confirm_password && <p className="text-red-500 text-[11px] font-bold ml-2">{errors.confirm_password}</p>}
               </div>
             )}
-
+ 
             {/* Submit */}
             <button
               type="submit"
@@ -337,25 +309,10 @@ const AuthModal = () => {
               )}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="border-t"></div>
-            <div className="absolute inset-0 flex justify-center -mt-3">
-              <span className="bg-white px-3 text-gray-400 text-sm">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          {/* Google Login */}
-          <div className="flex justify-center">
-            <GoogleLogin
-              onSuccess={handleGoogle}
-              onError={() => alert("Google Failed")}
-            />
-          </div>
-
+ 
+     
+ 
+ 
           {/* Toggle */}
           <div className="text-center mt-6 text-sm">
             {isLoginView
@@ -365,11 +322,11 @@ const AuthModal = () => {
               {isLoginView ? "Register" : "Login"}
             </button>
           </div>
-
+ 
         </div>
       </div>
     </div>
   );
 };
-
+ 
 export default AuthModal;

@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import { AdminProvider } from "./admin/context/AdminContext";
 
@@ -18,10 +18,19 @@ import Certifications from "./admin/pages/Certifications";
 import CourseProgress from "./admin/pages/CourseProgress";
 import Attendance from "./admin/pages/Attendance";
 
-function App() {
-  const user = JSON.parse(localStorage.getItem("user"));
+import LoginPage from "./pages/LoginPage";
+import MentorDashboard from "./pages/MentorDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-  // ❌ Basic safeguard if AdminRoute is bypassed
+const AdminRoute = ({ children }) => {
+  const userString = localStorage.getItem("user");
+  let user = null;
+  try {
+    user = userString ? JSON.parse(userString) : null;
+  } catch (e) {
+    console.error(e);
+  }
+
   if (!user || !user.isAdmin) {
     return (
       <div
@@ -83,11 +92,56 @@ function App() {
     );
   }
 
-  // ✅ Admin Access
+  return children;
+};
+
+const RootRedirect = () => {
+  const userString = localStorage.getItem("user");
+  let user = null;
+  try {
+    user = userString ? JSON.parse(userString) : null;
+  } catch (e) {}
+
+  const trainerToken = localStorage.getItem("trainer_access_token");
+
+  if (user && user.isAdmin) {
+    return <Navigate to="/admin" replace />;
+  } else if (trainerToken) {
+    return <Navigate to="/dashboard" replace />;
+  } else {
+    return <Navigate to="/login" replace />;
+  }
+};
+
+function App() {
   return (
     <AdminProvider>
       <Routes>
-        <Route path="/" element={<AdminLayout />}>
+        {/* Root redirect */}
+        <Route path="/" element={<RootRedirect />} />
+
+        {/* Public Route */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Protected Trainer/Mentor Route */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <MentorDashboard />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Protected Admin Routes */}
+        <Route 
+          path="/admin" 
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
           <Route index element={<Dashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="batches" element={<Batches />} />
@@ -100,6 +154,9 @@ function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="payment" element={<PaymentPage />} />
         </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AdminProvider>
   );

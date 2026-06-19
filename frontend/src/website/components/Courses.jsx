@@ -72,11 +72,33 @@ const popularCourses = [
 const Courses = () => {
   const [activeTab, setActiveTab] = useState("trending");
   const [notification, setNotification] = useState(null);
+  const [dbCourses, setDbCourses] = useState([]);
+  
+  React.useEffect(() => {
+    const fetchDbCourses = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/courses-list/");
+        const data = await res.json();
+        if (res.ok) {
+           const mappedDbCourses = data.map(c => ({
+             id: c.id + 1000,
+             title: c.title,
+             category: c.category || "New",
+             students: "New",
+             rating: "4.8",
+             img: c.imageUrl ? (c.imageUrl.startsWith("http") ? c.imageUrl : `http://127.0.0.1:8000${c.imageUrl}`) : "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80"
+           }));
+           setDbCourses(mappedDbCourses);
+        }
+      } catch (err) { console.error("Failed to fetch DB courses"); }
+    };
+    fetchDbCourses();
+  }, []);
   const navigate = useNavigate();
   const { addToCart, isInCart } = useContext(CartContext);
 
   const courses =
-    activeTab === "trending" ? trendingCourses : popularCourses;
+    activeTab === "trending" ? [...trendingCourses, ...dbCourses] : [...popularCourses, ...dbCourses];
 
   return (
     <section id="courses" className="bg-slate-50 py-8 sm:py-12 lg:py-16 relative">

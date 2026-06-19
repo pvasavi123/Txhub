@@ -9,6 +9,8 @@ class Course(models.Model):
     description = models.TextField(blank=True, default='')
     imageUrl = models.URLField(max_length=500, blank=True, default='')
     duration = models.CharField(max_length=50, blank=True, default='90 days')
+    category = models.CharField(max_length=100, blank=True, default='Software Development')
+    price = models.CharField(max_length=50, blank=True, default='4999')
     slug = models.SlugField(max_length=200, unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -9,16 +9,26 @@ const FALLBACK_IMG = 'https://images.unsplash.com/photo-1516321318423-f06f85e504
 const mapCourseId = (title) => {
   if (!title) return 'other';
   const t = title.toLowerCase();
+  
+  if (t === 'manual testing' || t.includes('manual testing')) return 'manual-testing';
+  
   if (t.includes('react') || t.includes('mern') || t.includes('mongodb')) return 'mern-stack';
   if (t.includes('java')) return 'java-full-stack';
-  if (t.includes('testing') || t.includes('qa') || t.includes('selenium') || t.includes('software testing')) return 'software-testing';
+  
+  if (t.includes('software testing') || t.includes('automation') || t.includes('selenium') || t === 'testing') return 'software-testing';
+  if (t.includes('testing')) {
+    if (t.includes('manual')) return 'manual-testing';
+    return 'software-testing'; 
+  }
+  
   if (t.includes('python')) return 'python-development';
-  if (t.includes('ui') || t.includes('ux') || t.includes('design')) return 'ui-ux-design';
+  if (t.includes('ui') || t.includes('ux') || t.includes('design')) return 'uiux-design';
   if (t.includes('devops') || t.includes('aws') || t.includes('docker')) return 'devops';
-  if (t.includes('ai') || t.includes('ml') || t.includes('machine')) return 'ai-ml';
+  if (t.includes('ai') || t.includes('ml') || t.includes('machine')) return 'aiml';
   if (t.includes('data science')) return 'data-science';
   return t.replace(/[^a-z0-9]/g, '-');
 };
+
 
 const ClassManagement = () => {
   const navigate = useNavigate();
@@ -31,7 +41,7 @@ const ClassManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', imageUrl: '', duration: '12 Weeks' });
+  const [form, setForm] = useState({ title: '', description: '', imageUrl: '', duration: '3 Months', price: '4999' });
 
   // ── Fetch courses from DB ──────────────────────────────────────────
   const fetchCourses = useCallback(async () => {
@@ -163,7 +173,7 @@ const ClassManagement = () => {
       {!loading && !error && courses.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
           {courses.map((course) => {
-            const imgSrc = course.imageUrl || FALLBACK_IMG;
+            const imgSrc = course.imageUrl ? (course.imageUrl.startsWith("http") ? course.imageUrl : `http://127.0.0.1:8000${course.imageUrl}`) : FALLBACK_IMG;
             const count = studentCount(course);
             return (
               <div
@@ -269,6 +279,33 @@ const ClassManagement = () => {
                   rows={3}
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
                 />
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">
+                    Duration
+                  </label>
+                  <input
+                    type="text"
+                    value={form.duration}
+                    onChange={e => setForm(f => ({ ...f, duration: e.target.value }))}
+                    placeholder="e.g. 3 Months"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">
+                    Price (₹)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.price}
+                    onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                    placeholder="e.g. 4999"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  />
+                </div>
               </div>
 
               <div>

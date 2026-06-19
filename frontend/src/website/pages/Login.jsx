@@ -2,13 +2,13 @@ import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Mail, Lock, ArrowRight, X, Eye, EyeOff } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
+ 
 import { toast } from "react-hot-toast";
-
+ 
 const Login = () => {
   const navigate = useNavigate();
   const { login, user } = useContext(AuthContext);
-
+ 
   // Redirect already logged-in users to home
   useEffect(() => {
     if (user) {
@@ -16,40 +16,40 @@ const Login = () => {
     }
   }, [user, navigate]);
   const [loading, setLoading] = useState(false);
-
+ 
   const [form, setForm] = useState({
     email: "",
     password: ""
   });
-
+ 
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-
+ 
   // 🔥 VALIDATION FUNCTION
   const validate = () => {
     let newErrors = {};
-
+ 
     if (!form.email.trim()) {
       newErrors.email = "Email address is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = "Please enter a valid email address";
     }
-
+ 
     if (!form.password) {
       newErrors.password = "Password is required";
     } else if (form.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
-
+ 
     setErrors(newErrors);
-
+ 
     if (Object.keys(newErrors).length > 0) {
       toast.error("Please fix the errors in the form");
     }
-
+ 
     return Object.keys(newErrors).length === 0;
   };
-
+ 
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -63,14 +63,14 @@ const Login = () => {
       });
     }
   };
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+ 
     if (!validate()) return;
-
+ 
     setLoading(true);
-
+ 
     try {
       const response = await fetch("http://127.0.0.1:8000/api/verify/", {
         method: "POST",
@@ -82,9 +82,9 @@ const Login = () => {
           password: form.password
         })
       });
-
+ 
       const data = await response.json();
-
+ 
       if (response.ok) {
         toast.success("Login Successful! Welcome back.");
         const actualUser = data.data || data;
@@ -93,7 +93,7 @@ const Login = () => {
       } else {
         toast.error(data.error || "Login failed. Please check your credentials.");
       }
-
+ 
     } catch (error) {
       console.log(error);
       toast.error("Server error. Please try again later.");
@@ -101,55 +101,55 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+ 
   // 🔥 Google Login
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setLoading(true);
-
-    try {
-      const res = await fetch("http://127.0.0.1:8000/api/auth/google/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          access_token: credentialResponse.credential,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.success("Login Successful!");
-        const actualUser = data.data || data;
-        login(actualUser);
-        navigate("/");
-      } else {
-        toast.error(data.error || "Google Login failed");
-      }
-
-    } catch (error) {
-      console.error(error);
-      toast.error("Server connection error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // const handleGoogleSuccess = async (credentialResponse) => {
+  //   setLoading(true);
+ 
+  //   try {
+  //     const res = await fetch("http://127.0.0.1:8000/api/auth/google/", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         access_token: credentialResponse.credential,
+  //       }),
+  //     });
+ 
+  //     const data = await res.json();
+ 
+  //     if (res.ok) {
+  //       toast.success("Login Successful!");
+  //       const actualUser = data.data || data;
+  //       login(actualUser);
+  //       navigate("/");
+  //     } else {
+  //       toast.error(data.error || "Google Login failed");
+  //     }
+ 
+  //   } catch (error) {
+  //     console.error(error);
+  //     toast.error("Server connection error");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+ 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gray-50 overflow-hidden">
-
+ 
       {/* Background Depth Effects */}
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400/20 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-300/20 rounded-full blur-[120px]" />
-
+ 
       {/* Blurred Overlay Backdrop */}
       <div className="absolute inset-0 backdrop-blur-[8px] bg-white/30 z-0"></div>
-
+ 
       {/* Modal Card */}
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="bg-white rounded-[2.5rem] p-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-gray-100/50 relative">
-
+ 
           {/* Close Button */}
           <button
             onClick={() => navigate("/")}
@@ -157,7 +157,7 @@ const Login = () => {
           >
             <X size={20} />
           </button>
-
+ 
           {/* Header */}
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-gray-900 tracking-tight">
@@ -167,10 +167,10 @@ const Login = () => {
               Sign in to access your dashboard
             </p>
           </div>
-
+ 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-
+ 
             {/* Email Address */}
             <div className="space-y-1">
               <div className="relative">
@@ -193,7 +193,7 @@ const Login = () => {
                 </p>
               )}
             </div>
-
+ 
             {/* Password */}
             <div className="space-y-1">
               <div className="relative">
@@ -228,7 +228,7 @@ const Login = () => {
                 </p>
               )}
             </div>
-
+ 
             {/* Forgot Password */}
             <div className="flex justify-end pr-2">
               <Link
@@ -238,7 +238,7 @@ const Login = () => {
                 Forgot Password?
               </Link>
             </div>
-
+ 
             {/* Submit */}
             <button
               type="submit"
@@ -254,22 +254,8 @@ const Login = () => {
               )}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center my-8">
-            <div className="flex-1 h-px bg-gray-100"></div>
-            <span className="px-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest">Or continue with</span>
-            <div className="flex-1 h-px bg-gray-100"></div>
-          </div>
-
-          {/* Google Button */}
-          <div className="flex justify-center">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => toast.error("Google Login Failed")}
-            />
-          </div>
-
+ 
+ 
           {/* Register Redirect */}
           <p className="text-center text-sm text-gray-500 mt-8 font-medium">
             Don't have an account?{" "}
@@ -277,16 +263,16 @@ const Login = () => {
               Register Now
             </Link>
           </p>
-
+ 
         </div>
-
+ 
         <p className="text-center mt-6 text-xs text-gray-400 font-medium">
           Safe & Secure Login
         </p>
-
+ 
       </div>
     </div>
   );
 };
-
+ 
 export default Login;

@@ -112,7 +112,6 @@ const TABS = [
   { id: 'students', label: 'Students', icon: Users },
   { id: 'batches', label: 'Batches', icon: Layers },
   { id: 'online-classes', label: 'Online Classes', icon: Video },
-  { id: 'attendance', label: 'Attendance', icon: UserCheck },
 ];
 
 const COURSE_IMAGES = {
@@ -328,72 +327,344 @@ export default function MentorDashboard() {
             Loading real data from server...
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, idx) => (
-            <div key={idx} className={`bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all ${idx !== 1 ? 'cursor-pointer' : ''}`}
-              onClick={() => {
-                if (idx === 0) setActiveTab('students');
-                else if (idx === 2) setActiveTab('notes');
-                else if (idx === 3) setActiveTab('assignments');
-              }}>
-              <div className="flex justify-between items-start">
-                <div className={`p-3 rounded-2xl ${stat.bg}`}><stat.icon className={`w-6 h-6 ${stat.color}`} /></div>
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${stat.trend.startsWith('+') ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'}`}>{stat.trend}</span>
-              </div>
-              <div className="mt-4">
-                <h4 className="text-slate-400 text-sm font-medium">{stat.label}</h4>
-                <h2 className="text-3xl font-black text-slate-800 mt-1">{stat.value}</h2>
-              </div>
-            </div>
-          ))}
+<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+  {stats.map((stat, idx) => (
+    <div
+      key={idx}
+      className="
+        group
+        relative
+        overflow-hidden
+        rounded-3xl
+        bg-white
+        border border-slate-200
+        p-6
+        shadow-[0_10px_40px_rgba(15,23,42,0.06)]
+        hover:shadow-[0_20px_60px_rgba(79,70,229,0.12)]
+        hover:-translate-y-1
+        transition-all
+        duration-300
+      "
+    >
+      {/* Background Glow */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 rounded-full blur-3xl opacity-0 group-hover:opacity-60 transition-all duration-500" />
+
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div
+            className={`
+              w-14 h-14
+              rounded-2xl
+              flex items-center justify-center
+              ${stat.bg}
+              shadow-sm
+            `}
+          >
+            <stat.icon className={`w-7 h-7 ${stat.color}`} />
+          </div>
+
+          <div className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-xs font-bold border border-green-100">
+            {stat.trend}
+          </div>
         </div>
+
+        {/* Value */}
+        <h2 className="text-4xl font-black text-slate-800 tracking-tight">
+          {stat.value}
+        </h2>
+
+        {/* Label */}
+        <p className="text-sm text-slate-500 font-medium mt-1">
+          {stat.label}
+        </p>
+
+        {/* Progress Bar */}
+     
+
+        {/* Footer */}
+        <div className="mt-5 flex items-center justify-between">
+          <span className="text-xs text-slate-400 font-medium">
+            Updated Today
+          </span>
+
+          <button
+            onClick={() => {
+              if (idx === 0) setActiveTab("students");
+              if (idx === 1) setActiveTab("courses");
+              if (idx === 2) setActiveTab("notes");
+              if (idx === 3) setActiveTab("assignments");
+            }}
+            className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-all group"
+          >
+            View More
+            <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </button>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-lg text-slate-800">Recent Students <span className="text-xs font-normal text-slate-400 ml-1">({recentStudents.length} shown)</span></h3>
-              <button onClick={() => setActiveTab('students')} className="text-sm text-indigo-600 font-semibold hover:underline">View All →</button>
+         <div className="
+  lg:col-span-2
+  relative
+  overflow-hidden
+  rounded-[32px]
+  bg-white
+  border border-slate-200
+  p-7
+  shadow-[0_20px_60px_rgba(15,23,42,0.08)]
+">
+
+  {/* Background Glow */}
+  <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-100 rounded-full blur-3xl opacity-30"></div>
+  <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-100 rounded-full blur-3xl opacity-20"></div>
+
+  <div className="relative z-10">
+
+    {/* Header */}
+    <div className="flex items-center justify-between mb-7">
+      <div>
+        <h3 className="text-xl font-black text-slate-800">
+          Recent Students
+        </h3>
+
+        <p className="text-sm text-slate-400 mt-1">
+          {recentStudents.length} students enrolled recently
+        </p>
+      </div>
+
+      <button
+        onClick={() => setActiveTab("students")}
+        className="
+          px-4 py-2
+          rounded-xl
+          bg-indigo-50
+          text-indigo-600
+          text-sm
+          font-semibold
+          hover:bg-indigo-100
+          transition-all
+        "
+      >
+        View All →
+      </button>
+    </div>
+
+    {/* Students List */}
+    <div className="space-y-4">
+
+      {recentStudents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Users className="w-12 h-12 text-slate-200 mb-3" />
+          <p className="text-slate-400 text-sm">
+            No students registered yet
+          </p>
+        </div>
+      ) : (
+        recentStudents.map((student) => (
+          <div
+            key={student.id}
+            onClick={() => setShowStudentDetail(student)}
+            className="
+              group
+              flex
+              items-center
+              justify-between
+              p-4
+              rounded-2xl
+              bg-slate-50
+              border
+              border-slate-100
+              hover:border-indigo-200
+              hover:bg-white
+              hover:shadow-lg
+              hover:-translate-y-1
+              transition-all
+              duration-300
+              cursor-pointer
+            "
+          >
+            <div className="flex items-center gap-4">
+
+              {/* Avatar */}
+              <div className="
+                w-12 h-12
+                rounded-2xl
+                bg-gradient-to-br
+                from-indigo-500
+                to-purple-600
+                text-white
+                flex
+                items-center
+                justify-center
+                font-bold
+                shadow-lg
+                shadow-indigo-200
+              ">
+                {(student.name || "?")
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
+
+              {/* Student Info */}
+              <div>
+                <h4 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                  {student.name}
+                </h4>
+
+                <p className="text-sm text-slate-500">
+                  {student.course ||
+                    student.courseSpecialization ||
+                    "No Course"}
+                </p>
+
+                {student.batch_date &&
+                  student.batch_date !== "Not Specified" && (
+                    <p className="text-xs text-indigo-500 font-medium mt-1">
+                      📅 {student.batch_date}
+                    </p>
+                  )}
+              </div>
             </div>
-            <div className="space-y-4">
-              {recentStudents.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-sm">No students registered yet.</div>
-              ) : recentStudents.map((student) => (
-                <div key={student.id} onClick={() => setShowStudentDetail(student)} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">{(student.name || '?').charAt(0).toUpperCase()}</div>
-                    <div>
-                      <h4 className="font-semibold text-sm text-slate-800">{student.name}</h4>
-                      <p className="text-xs text-slate-500">{student.course || student.courseSpecialization || 'No course'}</p>
-                      {student.batch_date && student.batch_date !== 'Not Specified' && (
-                        <p className="text-[10px] text-indigo-500 font-semibold mt-0.5 flex items-center gap-1">
-                          <span>📅</span> Batch: {student.batch_date}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${student.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                      }`}>{student.status}</span>
-                    <CircularProgress progress={student.progress || 0} size={40} />
-                  </div>
-                </div>
-              ))}
+
+            {/* Right Side */}
+            <div className="flex items-center gap-4">
+
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  student.status === "Active"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-amber-100 text-amber-700"
+                }`}
+              >
+                {student.status}
+              </span>
+
+              <CircularProgress
+                progress={student.progress || 0}
+                size={46}
+              />
             </div>
           </div>
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 text-white shadow-lg shadow-indigo-200">
-            <h3 className="font-bold text-lg mb-6">Quick Actions</h3>
-            <div className="space-y-3">
-              {[
-                { label: 'Schedule Class', icon: Calendar, action: () => showToast('Class scheduling feature coming soon!', 'info') },
-                { label: 'Upload Notes', icon: Send, action: () => setActiveTab('notes') },
-                { label: 'Create Assignment', icon: Plus, action: () => { setActiveTab('assignments'); setTimeout(() => setShowNewAssignment(true), 300); } },
-              ].map((a, idx) => (
-                <button key={idx} onClick={a.action} className="w-full flex items-center gap-3 p-4 rounded-2xl bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-md border border-white/10 active:scale-[0.98]">
-                  <a.icon className="w-5 h-5 text-indigo-100" />
-                  <span className="font-semibold text-sm">{a.label}</span>
-                </button>
-              ))}
+        ))
+      )}
+
+    </div>
+
+  </div>
+</div>
+          <div
+  className="
+    relative
+    overflow-hidden
+    rounded-[32px]
+    bg-gradient-to-br
+    from-indigo-600
+    via-indigo-700
+    to-purple-700
+    p-7
+    text-white
+    shadow-[0_25px_60px_rgba(79,70,229,0.35)]
+  "
+>
+  {/* Glow Effects */}
+  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+  <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-300/20 rounded-full blur-3xl"></div>
+
+  <div className="relative z-10">
+    {/* Header */}
+    <div className="mb-6">
+      <h3 className="text-xl font-black">
+        Quick Actions
+      </h3>
+      <p className="text-indigo-100 text-sm mt-1">
+        Manage your daily mentoring tasks
+      </p>
+    </div>
+
+    {/* Actions */}
+    <div className="space-y-3">
+      {[
+        {
+          label: "Schedule Class",
+          icon: Calendar,
+          action: () =>
+            showToast(
+              "Class scheduling feature coming soon!",
+              "info"
+            ),
+        },
+        {
+          label: "Upload Notes",
+          icon: Send,
+          action: () => setActiveTab("notes"),
+        },
+        {
+          label: "Create Assignment",
+          icon: Plus,
+          action: () => {
+            setActiveTab("assignments");
+            setTimeout(() => setShowNewAssignment(true), 300);
+          },
+        },
+      ].map((a, idx) => (
+        <button
+          key={idx}
+          onClick={a.action}
+          className="
+            group
+            w-full
+            flex
+            items-center
+            justify-between
+            p-4
+            rounded-2xl
+            bg-white/10
+            border
+            border-white/10
+            backdrop-blur-md
+            hover:bg-white/20
+            hover:translate-x-1
+            transition-all
+            duration-300
+          "
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+              <a.icon className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+            </div>
+
+            <div className="text-left">
+              <p className="font-semibold text-sm">
+                {a.label}
+              </p>
+              <p className="text-xs text-indigo-100">
+                Open action
+              </p>
             </div>
           </div>
+
+          <ChevronRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
+        </button>
+      ))}
+    </div>
+
+    {/* Footer */}
+    <div className="mt-6 pt-5 border-t border-white/10">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-indigo-100">
+          Productivity Tools
+        </span>
+
+        <span className="px-3 py-1 rounded-full bg-white/10 text-xs font-semibold">
+          3 Actions
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
         </div>
       </motion.div>
     );
@@ -425,7 +696,7 @@ export default function MentorDashboard() {
               className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-600" title="Export CSV"><Download className="w-4 h-4" /></button>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300">
           <table className="w-full">
             <thead>
               <tr className="text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/30">
@@ -1093,7 +1364,6 @@ export default function MentorDashboard() {
   // ═══════════════════════════════════════════
   const NewAssignmentForm = () => {
     const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
     const [course, setCourse] = useState(trainerData?.assigned_course || '');
     const [batch, setBatch] = useState(selectedBatchId ? batches.find(b => b.id === selectedBatchId)?.name || '' : '');
     const [dueDate, setDueDate] = useState('');
@@ -1106,7 +1376,7 @@ export default function MentorDashboard() {
       try {
         const formData = new FormData();
         formData.append('title', title.trim());
-        formData.append('description', description.trim());
+        formData.append('description', '');
         formData.append('course', course);
         formData.append('batch_month', batch);
         formData.append('dueDate', dueDate);
@@ -1143,11 +1413,6 @@ export default function MentorDashboard() {
         <div>
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Assignment Title *</label>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Build a REST API"
-            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
-        </div>
-        <div>
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Description</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Assignment details..." rows={3}
             className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -1808,37 +2073,77 @@ export default function MentorDashboard() {
   return (
     <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-            <GraduationCap className="w-8 h-8 text-indigo-600" />
-            Mentor Workspace
-          </h1>
-          <p className="text-slate-500 mt-1 font-medium">
-            Welcome, <span className="font-bold text-indigo-600">{trainerData?.name || 'Trainer'}</span> · {trainerData?.assigned_course || ''}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => showToast('You have 3 new notifications', 'info')} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 shadow-sm relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-          </button>
-          <button onClick={() => setShowResourceModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95">
-            <Plus className="w-4 h-4" /> Create Resource
-          </button>
-          <button
-            onClick={() => {
-              localStorage.removeItem('trainer_access_token');
-              localStorage.removeItem('trainer_refresh_token');
-              localStorage.removeItem('trainer_data');
-              navigate('/login');
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-sm font-bold hover:bg-rose-50 transition-all shadow-sm active:scale-95"
-          >
-            <LogOut className="w-4 h-4" /> Logout
-          </button>
-        </div>
+     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+
+  {/* Left Section */}
+  <div className="flex items-center gap-4">
+    <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-xl shadow-indigo-200">
+      <GraduationCap className="w-8 h-8 text-white" />
+    </div>
+
+    <div>
+      <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+        Mentor Workspace
+      </h1>
+
+      <div className="flex flex-wrap items-center gap-2 mt-2">
+        <span className="text-slate-500 text-sm">
+          Welcome back,
+        </span>
+
+        <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-sm font-bold">
+          {trainerData?.name || "Trainer"}
+        </span>
+
+        <span className="text-slate-300">•</span>
+
+        <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-sm font-semibold">
+          {trainerData?.assigned_course || "All Courses"}
+        </span>
       </div>
+    </div>
+  </div>
+
+  {/* Right Section */}
+  <div className="flex items-center gap-3 flex-wrap">
+
+    {/* Notification */}
+    <button
+      onClick={() => showToast("You have 3 new notifications", "info")}
+      className="relative p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-300"
+    >
+      <Bell className="w-5 h-5 text-slate-600" />
+
+      <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+        3
+      </span>
+    </button>
+
+    {/* Create Resource */}
+    <button
+      onClick={() => setShowResourceModal(true)}
+      className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all duration-300"
+    >
+      <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+      Create Resource
+    </button>
+
+    {/* Logout */}
+    <button
+      onClick={() => {
+        localStorage.removeItem("trainer_access_token");
+        localStorage.removeItem("trainer_refresh_token");
+        localStorage.removeItem("trainer_data");
+        navigate("/login");
+      }}
+      className="flex items-center gap-2 px-5 py-3 bg-white border border-rose-200 text-rose-600 rounded-2xl font-bold shadow-sm hover:bg-rose-50 hover:border-rose-300 hover:shadow-md transition-all duration-300"
+    >
+      <LogOut className="w-4 h-4" />
+      Logout
+    </button>
+
+  </div>
+</div>
 
       {/* Modern Tabs */}
       <div className="flex overflow-x-auto pb-4 mb-6 hide-scrollbar gap-2">
@@ -1856,17 +2161,40 @@ export default function MentorDashboard() {
       </div>
 
       {/* Tab Content */}
-      <div className="relative">
-        <AnimatePresence mode="wait">
-          {activeTab === 'overview' && <OverviewTab key="overview" />}
-          {activeTab === 'students' && <StudentsTab key="students" />}
-          {activeTab === 'courses' && <CoursesTab key="courses" />}
-          {activeTab === 'batches' && <BatchesTab key="batches" />}
-          {activeTab === 'online-classes' && <OnlineClassesTab key="online-classes" />}
-          {activeTab === 'attendance' && <AttendanceTab key="attendance" />}
-        </AnimatePresence>
-      </div>
+  <div className="relative">
 
+  <AnimatePresence mode="wait">
+    <motion.div
+      key={activeTab}
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.98 }}
+      transition={{
+        duration: 0.35,
+        ease: "easeInOut"
+      }}
+      className="relative"
+    >
+      <div className="relative overflow-hidden rounded-[32px] bg-white/80 backdrop-blur-xl border border-slate-200 shadow-[0_20px_60px_rgba(15,23,42,0.08)] p-6 lg:p-8">
+
+        {/* Decorative Background */}
+        <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-100 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-100 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+
+        <div className="relative z-10">
+          {activeTab === "overview" && <OverviewTab />}
+          {activeTab === "students" && <StudentsTab />}
+          {activeTab === "courses" && <CoursesTab />}
+          {activeTab === "batches" && <BatchesTab />}
+          {activeTab === "online-classes" && <OnlineClassesTab />}
+          {activeTab === "attendance" && <AttendanceTab />}
+        </div>
+
+      </div>
+    </motion.div>
+  </AnimatePresence>
+
+</div>
       {/* ── MODALS ─────────────────────────────── */}
       <AnimatePresence>
         {showNewCourse && (

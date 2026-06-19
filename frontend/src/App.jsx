@@ -12,9 +12,27 @@ function App() {
     return null;
   }
 
+  // Auth pages on student domains should load the main WebsiteApp (where login/register/forgot-password reside)
+  const isAuthPath = ["/login", "/register", "/forgot-password"].includes(window.location.pathname);
+
+  if (isStudentDomain && !isAuthPath) {
+    return (
+      <Routes>
+        <Route 
+          path="/student/*" 
+          element={
+            <StudentRoute>
+              <StudentApp />
+            </StudentRoute>
+          } 
+        />
+        <Route path="/*" element={<StudentApp />} />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
-      {/* 1.5. Always prioritize the explicit /student/ path */}
       <Route 
         path="/student/*" 
         element={
@@ -23,15 +41,6 @@ function App() {
           </StudentRoute>
         } 
       />
-
-      {/* 2. Explicitly allow auth pages to reach the website app (even on student domains) */}
-      <Route path="/login" element={<WebsiteApp />} />
-      <Route path="/register" element={<WebsiteApp />} />
-
-      {/* 3. If it's a specific subdomain, treat the home path as that dashboard */}
-      {isStudentDomain && <Route path="/*" element={<StudentApp />} />}
-
-      {/* 4. Default fallback to the main Website application */}
       <Route path="/*" element={<WebsiteApp />} />
     </Routes>
   );

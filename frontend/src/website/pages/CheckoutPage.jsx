@@ -57,9 +57,12 @@ const CheckoutPage = () => {
 let totalToPay = 0;
 let summaryTitle = "";
 
+const livePrice = subtotalBase > 0 ? subtotalBase : 4999;
+const recordedPrice = Math.round(livePrice * 0.4); // 40% of live price
+
 // FULL PAYMENT
 if (enrollmentType === "full") {
-  totalToPay = classType === "live" ? 4999 : 1999;
+  totalToPay = classType === "live" ? livePrice : recordedPrice;
   summaryTitle = "Full Payment";
 }
 
@@ -75,9 +78,8 @@ if (isBalancePayment) {
   summaryTitle = "Remaining Balance";
 }
 
-  // If balance payment, we use the original total for assessment displays
 // NEW PRICE BASED ON CLASS TYPE
-const actualPrice = classType === "live" ? 4999 : 1999;
+const actualPrice = classType === "live" ? livePrice : recordedPrice;
 
 // BASE ASSESSMENT (fake original price)
 const originalPriceBase = actualPrice * 4;
@@ -252,7 +254,7 @@ const discount = originalPriceBase - actualPrice;
       <p className="text-sm text-slate-500">Get full access</p>
 
       <p className="text-blue-600 font-bold mt-2">
-        ₹{classType === "live" ? 4999 : 1999}
+        ₹{classType === "live" ? livePrice : recordedPrice}
       </p>
     </div>
 
@@ -476,7 +478,7 @@ const discount = originalPriceBase - actualPrice;
                       <p className="text-[10px] font-bold text-green-600 uppercase">
   {classType === "live" ? "Live Classes" : "Recorded Classes"}
 </p>
-                      <p className="font-black text-blue-600 italic text-sm">₹{classType === "live" ? 4999 : 1999}</p>
+                      <p className="font-black text-blue-600 italic text-sm">₹{classType === "live" ? livePrice : recordedPrice}</p>
                     </div>
                   </div>
                 ))}

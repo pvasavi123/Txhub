@@ -3,13 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { User, Mail, Phone, Lock, ArrowRight, X, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-hot-toast";
-
+ 
 const Register = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
-
+ 
   const [loading, setLoading] = useState(false);
-
+ 
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -17,11 +17,11 @@ const Register = () => {
     password: "",
     confirm_password: ""
   });
-
+ 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
-
+ 
   const validateField = (name, value, currentForm) => {
     let errMsg = "";
     if (name === "full_name") {
@@ -44,39 +44,39 @@ const Register = () => {
     }
     return errMsg;
   };
-
+ 
   // 🔥 VALIDATION FUNCTION
   const validate = () => {
     let newErrors = {};
-
+ 
     Object.keys(form).forEach(key => {
       const err = validateField(key, form[key], form);
       if (err) newErrors[key] = err;
     });
-
+ 
     setErrors(newErrors);
-
+ 
     if (Object.keys(newErrors).length > 0) {
       toast.error("Please fix the validation errors");
     }
-
+ 
     return Object.keys(newErrors).length === 0;
   };
-
+ 
   const handleChange = (e) => {
     let { name, value } = e.target;
-
+ 
     if (name === 'full_name') {
       value = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 30);
     } else if (name === 'phone') {
       value = value.replace(/\D/g, '').slice(0, 10);
     }
-
+ 
     const newForm = { ...form, [name]: value };
     setForm(newForm);
-
+ 
     const errMsg = validateField(name, value, newForm);
-
+ 
     setErrors(prev => {
       const updatedErrors = { ...prev, [name]: errMsg };
       if (name === 'password' && newForm.confirm_password) {
@@ -85,23 +85,23 @@ const Register = () => {
       return updatedErrors;
     });
   };
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+ 
     if (!validate()) return;
-
+ 
     setLoading(true);
-
+ 
     try {
       const res = await fetch("http://127.0.0.1:8000/api/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
       });
-
+ 
       const data = await res.json();
-
+ 
       if (res.ok) {
         toast.success("Registration Successful! Redirecting to login...");
         login(data.data || data);
@@ -109,26 +109,26 @@ const Register = () => {
       } else {
         toast.error(data.error || "Registration failed. Email might already exist.");
       }
-
+ 
     } catch {
       toast.error("Server connection error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
+ 
   const inputStyle = (field) =>
     `w-full pl-12 pr-12 py-3.5 rounded-xl border transition-all text-sm shadow-sm outline-none ${errors[field]
       ? "bg-red-50/50 border-red-300 focus:ring-4 focus:ring-red-100 text-red-900 placeholder:text-red-300"
       : "bg-white border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-gray-700 placeholder:text-gray-400"
     }`;
-
+ 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
-
+ 
       <div className="w-full max-w-md px-6">
         <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 shadow-2xl">
-
+ 
           {/* Close */}
           <button
             onClick={() => navigate("/")}
@@ -136,7 +136,7 @@ const Register = () => {
           >
             <X size={20} />
           </button>
-
+ 
           {/* Title */}
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-blue-600">
@@ -146,9 +146,9 @@ const Register = () => {
               Start your journey 🚀
             </p>
           </div>
-
+ 
           <form onSubmit={handleSubmit} className="space-y-4">
-
+ 
             {/* Full Name */}
             <div className="space-y-1">
               <div className="relative">
@@ -163,7 +163,7 @@ const Register = () => {
               </div>
               {errors.full_name && <p className="text-red-500 text-[11px] font-bold ml-2 animate-in fade-in slide-in-from-top-1">{errors.full_name}</p>}
             </div>
-
+ 
             {/* Email */}
             <div className="space-y-1">
               <div className="relative">
@@ -178,7 +178,7 @@ const Register = () => {
               </div>
               {errors.email && <p className="text-red-500 text-[11px] font-bold ml-2 animate-in fade-in slide-in-from-top-1">{errors.email}</p>}
             </div>
-
+ 
             {/* Phone */}
             <div className="space-y-1">
               <div className="relative">
@@ -193,7 +193,7 @@ const Register = () => {
               </div>
               {errors.phone && <p className="text-red-500 text-[11px] font-bold ml-2 animate-in fade-in slide-in-from-top-1">{errors.phone}</p>}
             </div>
-
+ 
             {/* Password */}
             <div className="space-y-1">
               <div className="relative">
@@ -221,7 +221,7 @@ const Register = () => {
               </div>
               {errors.password && <p className="text-red-500 text-[11px] font-bold ml-2 animate-in fade-in slide-in-from-top-1">{errors.password}</p>}
             </div>
-
+ 
             {/* Confirm */}
             <div className="space-y-1">
               <div className="relative">
@@ -249,7 +249,7 @@ const Register = () => {
               </div>
               {errors.confirm_password && <p className="text-red-500 text-[11px] font-bold ml-2 animate-in fade-in slide-in-from-top-1">{errors.confirm_password}</p>}
             </div>
-
+ 
             {/* Submit */}
             <button
               disabled={loading}
@@ -260,31 +260,13 @@ const Register = () => {
             >
               {loading ? "Creating..." : <>Create Account <ArrowRight size={18} /></>}
             </button>
-
+ 
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center my-6">
-            <div className="flex-1 h-px bg-gray-200"></div>
-            <span className="px-3 text-xs text-gray-400">OR</span>
-            <div className="flex-1 h-px bg-gray-200"></div>
-          </div>
-
-          {/* GOOGLE BUTTON (REAL STYLE) */}
-          <button
-            className="w-full flex items-center justify-center gap-3 py-3 border rounded-xl bg-white hover:bg-gray-50 transition shadow-sm"
-            onClick={() => toast.success("Google integration coming soon!")}
-          >
-            <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              className="w-5 h-5"
-              alt="google"
-            />
-            <span className="text-sm font-medium text-gray-700">
-              Continue with Google
-            </span>
-          </button>
-
+ 
+ 
+ 
+ 
+ 
           {/* Footer */}
           <p className="text-center text-sm text-gray-500 mt-6">
             Already have an account?{" "}
@@ -292,11 +274,11 @@ const Register = () => {
               Login
             </Link>
           </p>
-
+ 
         </div>
       </div>
     </div>
   );
 };
-
+ 
 export default Register;

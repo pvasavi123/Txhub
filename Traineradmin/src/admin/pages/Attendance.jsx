@@ -110,14 +110,6 @@ export default function Attendance() {
         <p className="text-slate-500 mt-1 text-sm">View and filter attendance across all mentors and batches</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Records" value={totalStudents} icon={Users} color="text-blue-600" bg="bg-blue-100" />
-        <StatCard label="Present" value={totalPresent} icon={UserCheck} color="text-green-600" bg="bg-green-100" />
-        <StatCard label="Absent" value={totalAbsent} icon={X} color="text-red-500" bg="bg-red-100" />
-        <StatCard label="Attendance %" value={`${attendancePct}%`} icon={TrendingUp} color="text-indigo-600" bg="bg-indigo-100" />
-      </div>
-
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
         <form onSubmit={handleFilter} className="flex flex-wrap gap-3 items-end">

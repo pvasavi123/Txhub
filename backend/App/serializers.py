@@ -4,7 +4,7 @@ from App.models import UserRegister, AdminUser, Student, Enrollment, LiveClass, 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'imageUrl', 'duration', 'slug', 'created_at']
+        fields = ['id', 'title', 'description', 'imageUrl', 'duration', 'category', 'price', 'slug', 'created_at']  
         read_only_fields = ['id', 'slug', 'created_at']
 
 
@@ -46,6 +46,7 @@ class EnrollmentSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField(source='user.full_name')
     assigned_batch_name = serializers.ReadOnlyField(source='assigned_batch.name')
     assigned_mentor_name = serializers.ReadOnlyField(source='assigned_mentor.name')
+    imageUrl = serializers.SerializerMethodField()
 
     class Meta:
         model = Enrollment
@@ -56,6 +57,47 @@ class EnrollmentSerializer(serializers.ModelSerializer):
             'payment_status',
             'total_fee',
         ]
+
+    def get_imageUrl(self, obj):
+        def make_absolute(url):
+            if not url:
+                return None
+            if url.startswith('http://') or url.startswith('https://'):
+                return url
+            # Prepend local server if it is a relative path
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(url)
+            return 'http://127.0.0.1:8000' + ('/' if not url.startswith('/') else '') + url
+
+        # 1. Exact case-insensitive match
+        course = Course.objects.filter(title__iexact=obj.title).first()
+        if course and course.imageUrl:
+            return make_absolute(course.imageUrl)
+
+        # 2. Substring matching for variations
+        obj_title = obj.title.lower().strip() if obj.title else ""
+        if obj_title:
+            for c in Course.objects.all():
+                c_title = c.title.lower().strip()
+                if c_title and (c_title in obj_title or obj_title in c_title):
+                    if c.imageUrl:
+                        return make_absolute(c.imageUrl)
+
+        # 3. Fallback check using first item's title
+        if obj.items and isinstance(obj.items, list) and len(obj.items) > 0:
+            item_title = obj.items[0].get('title', '')
+            if item_title:
+                item_title_lower = item_title.lower().strip()
+                course = Course.objects.filter(title__iexact=item_title).first()
+                if course and course.imageUrl:
+                    return make_absolute(course.imageUrl)
+                for c in Course.objects.all():
+                    c_title = c.title.lower().strip()
+                    if c_title and (c_title in item_title_lower or item_title_lower in c_title):
+                        if c.imageUrl:
+                            return make_absolute(c.imageUrl)
+        return None
 
 
 
