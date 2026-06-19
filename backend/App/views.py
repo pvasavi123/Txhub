@@ -564,21 +564,24 @@ def get_enrollments(request):
         with connection.cursor() as cursor:
             cursor.execute("ALTER TABLE App_batch ADD COLUMN assigned_mentor_id integer NULL;")
     except Exception as e:
-        if "duplicate column name" not in str(e).lower():
+        err_msg = str(e).lower()
+        if "duplicate" not in err_msg and "already exists" not in err_msg:
             return Response({"error": f"Alter App_batch failed: {str(e)}"}, status=500)
             
     try:
         with connection.cursor() as cursor:
             cursor.execute("ALTER TABLE App_enrollment ADD COLUMN assigned_mentor_id integer NULL;")
     except Exception as e:
-        if "duplicate column name" not in str(e).lower():
+        err_msg = str(e).lower()
+        if "duplicate" not in err_msg and "already exists" not in err_msg:
             return Response({"error": f"Alter App_enrollment mentor failed: {str(e)}"}, status=500)
             
     try:
         with connection.cursor() as cursor:
             cursor.execute("ALTER TABLE App_enrollment ADD COLUMN assigned_batch_id integer NULL;")
     except Exception as e:
-        if "duplicate column name" not in str(e).lower():
+        err_msg = str(e).lower()
+        if "duplicate" not in err_msg and "already exists" not in err_msg:
             return Response({"error": f"Alter App_enrollment batch failed: {str(e)}"}, status=500)
         
     try:
@@ -1826,8 +1829,9 @@ def get_course_progress(request, course_id):
         'react-full-stack-development': ['react', 'mern', 'fullstack', 'full stack'],
         'mern-stack': ['react', 'mern', 'fullstack', 'full stack'],
         'java-full-stack': ['java'],
-        'testing': ['test', 'selenium', 'qa', 'automation'],
-        'software-testing': ['test', 'selenium', 'qa', 'automation'],
+        'testing': ['software testing', 'selenium', 'automation', 'qa automation'],
+        'software-testing': ['software testing', 'selenium', 'automation', 'qa automation'],
+        'manual-testing': ['manual testing', 'manual qa', 'manual test'],
         'python-development': ['python'],
         'data-science': ['data science'],
         'ai-ml': ['ai', 'ml', 'machine learning', 'artificial intelligence'],
@@ -1844,7 +1848,13 @@ def get_course_progress(request, course_id):
         if not text:
             return False
         t = text.lower()
-        return any(k in t for k in keywords)
+        # Explicit exception to prevent 'manual testing' from matching broad 'testing' keyword rules
+        if course_id in ['software-testing', 'testing'] and 'manual' in t:
+            return False
+        if course_id == 'manual-testing' and 'manual' in t:
+            return True
+            
+        return any(k in t for k in keywords) or (t == course_id.replace('-', ' '))
 
     # ------------------------------------------------------------------
     # 2. Fetch all Assignments for this course (single query)
@@ -2016,13 +2026,13 @@ def manage_courses(request):
         courses = Course.objects.all().order_by('-created_at')
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data)
- 
+
     # POST - create
     data = request.data.copy()
     title = data.get('title', '').lower()
     desc = data.get('description', '').lower()
     combined_text = title + " " + desc
-   
+    
     if not data.get('category') or data.get('category') == 'Other':
         if any(kw in combined_text for kw in ['gen ai', 'ai', 'ml', 'llm', 'data science']):
             data['category'] = 'AI/ML' if 'ai' in combined_text or 'ml' in combined_text or 'gen ai' in combined_text or 'llm' in combined_text else 'Data Science'
@@ -2040,14 +2050,14 @@ def manage_courses(request):
             data['category'] = 'Soft Skills'
         else:
             data['category'] = 'Software Development' # Fallback
-           
+            
     serializer = CourseSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
- 
- 
+
+
 @api_view(['DELETE'])
 @authentication_classes([])
 @permission_classes([])
@@ -2058,4 +2068,3 @@ def delete_course(request, pk):
         return Response({'message': 'Deleted'}, status=status.HTTP_204_NO_CONTENT)
     except Course.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
- 

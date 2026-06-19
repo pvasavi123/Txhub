@@ -35,7 +35,7 @@ const courseData = [
     batchStart: "04 May 2026",
     category: "Software Development",
     img: reactImg,
-    // instructor: "John Developer",
+    instructor: "John Developer",
     instructorBio: "Senior Full Stack Engineer with 10+ years of experience in React and Node.js ecosystems.",
     instructorImage: "https://randomuser.me/api/portraits/men/32.jpg",
     instructorCourses: [
