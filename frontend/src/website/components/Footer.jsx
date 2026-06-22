@@ -77,7 +77,7 @@ const Footer = () => {
 
           <div className="space-y-3">
             <p className="text-slate-600 flex items-center gap-3 text-sm font-semibold">
-              <Mail size={16} className="text-blue-500" /> info@tanvox.in
+              <Mail size={16} className="text-blue-500" />support@txhub.in
             </p>
             <p className="text-slate-600 flex items-center gap-3 text-sm font-semibold">
               <Phone size={16} className="text-blue-500" /> +91 9676507387

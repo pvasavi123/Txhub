@@ -587,8 +587,8 @@ const [selectedOption, setSelectedOption] = useState("");
 
 
       {/* Main Layout */}
-      <section id="courses-grid" className="bg-white py-10 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-10 lg:px-16 mb-12">
+      <section id="courses-grid" className="bg-white py-10 sm:py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-10 lg:px-16 mb-2">
           {/* 🔘 ONLINE / OFFLINE FILTER (Moved below Hero) */}
           {!hideControls && (
   <div className="flex justify-center">
@@ -616,7 +616,7 @@ const [selectedOption, setSelectedOption] = useState("");
           )}
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-10 lg:px-16 grid lg:grid-cols-4 gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-10 lg:px-16 grid lg:grid-cols-4 gap-2">
 
           {/* Sidebar */}
           {mode === "Online" && (
@@ -664,7 +664,7 @@ const [selectedOption, setSelectedOption] = useState("");
             {/* Courses Grid */}
             <div className="w-full">
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-2">
                 {mode === "Offline" ? (
                   <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
 

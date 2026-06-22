@@ -32,7 +32,7 @@ const contactInfo = [
   {
     icon: Phone,
     label: "Call Us",
-    value: "+91 98765 43210",
+    value: "+91 9676507387",
     sub: "Mon–Sat, 9 AM to 6 PM IST",
     bg: "bg-blue-50",
     iconColor: "text-blue-500",
@@ -246,7 +246,7 @@ const ContactPage = () => {
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-black text-slate-600 mb-2 uppercase tracking-wide">
                     Your Name *
@@ -286,7 +286,7 @@ const ContactPage = () => {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-black text-slate-600 mb-2 uppercase tracking-wide">
                     Phone Number
@@ -356,7 +356,7 @@ const ContactPage = () => {
               <button
   type="submit"
   disabled={loading}
-  className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-xl font-black text-sm shadow-xl shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-1 transition-all flex items-center justify-center gap-2 active:scale-95 mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
+  className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-xl font-black text-sm shadow-xl shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-1 transition-all flex items-center justify-center gap-1 active:scale-95 mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
 >
   <Send size={18} />
 
@@ -376,7 +376,7 @@ const ContactPage = () => {
         transition={{ duration: 0.6 }}
         className="max-w-7xl mx-auto px-6 mb-20"
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1">
           {contactInfo.map((item, i) => {
             const Icon = item.icon;
             return (
@@ -492,7 +492,7 @@ const ContactPage = () => {
                   href={link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex items-center gap-3 p-5 bg-white/5 border border-white/10 rounded-2xl font-bold text-sm transition-colors duration-300 ${color} hover:border-transparent cursor-pointer`}
+                  className={`flex items-center gap-2 p-5 bg-white/5 border border-white/10 rounded-2xl font-bold text-sm transition-colors duration-300 ${color} hover:border-transparent cursor-pointer`}
                 >
                   <Icon size={20} />
                   {label}

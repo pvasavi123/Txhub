@@ -287,10 +287,10 @@ const CourseDetails = () => {
     <div className="min-h-screen bg-[#FAFAFC] text-slate-800 font-sans pb-16">
       
       {/* ── HEADER NAVIGATION ── */}
-      <div className="bg-white border-b border-slate-100 py-4 px-6 sticky top-0 z-50 flex items-center justify-between">
+      <div className="bg-white border-b border-slate-100 py-3 px-4 md:px-6 sticky top-0 z-50 flex flex-col sm:flex-row gap-3 sm:gap-0 items-start sm:items-center justify-between">
         <button
           onClick={() => navigate('/admin/courses')}
-          className="flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition-colors text-sm"
+          className="flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition-colors text-xs sm:text-sm"
         >
           <ArrowLeft size={16} /> Back to Courses
         </button>
@@ -300,7 +300,7 @@ const CourseDetails = () => {
       </div>
 
       {/* ── HERO BANNER SECTION ── */}
-      <div className="relative overflow-hidden bg-slate-950 text-white py-12 md:py-20 px-6 lg:px-12">
+      <div className="relative overflow-hidden bg-slate-950 text-white py-10 md:py-20 px-4 sm:px-6 lg:px-12">
         <div className="absolute inset-0 bg-cover bg-center opacity-25" style={{ backgroundImage: `url(${data.banner})` }}></div>
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent"></div>
         
@@ -346,13 +346,13 @@ const CourseDetails = () => {
       </div>
 
       {/* ── MAIN LAYOUT GRID ── */}
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 mt-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 mt-6 md:mt-12 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
         
         {/* LEFT COLUMN: COURSE DETAIL TABS & DETAILS */}
         <div className="lg:col-span-8 space-y-8">
           
           {/* TABS HEADER */}
-          <div className="flex border-b border-slate-100 bg-white p-2 rounded-2xl shadow-sm gap-2">
+          <div className="flex overflow-x-auto no-scrollbar border-b border-slate-100 bg-white p-2 rounded-2xl shadow-sm gap-2">
             {[
               { id: 'overview', label: 'Overview' },
               { id: 'curriculum', label: 'Curriculum' },
@@ -398,7 +398,7 @@ const CourseDetails = () => {
 
                 <div className="space-y-4">
                   <h3 className="text-xl font-black text-slate-800">Course Highlights</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {data.highlights.map((high, idx) => (
                       <div key={idx} className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-600">
                         <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
@@ -600,7 +600,7 @@ const CourseDetails = () => {
         </div>
 
         {/* RIGHT COLUMN: STICKY ENROLLMENT SIDEBAR */}
-        <div className="lg:col-span-4 lg:sticky lg:top-20 space-y-6">
+        <div className="order-first lg:order-last lg:col-span-4 lg:sticky lg:top-20 space-y-6">
           <div className="bg-white rounded-[2.5rem] border border-slate-100 p-6 md:p-8 shadow-[0_24px_50px_-16px_rgba(0,0,0,0.06)] relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-blue-500" />
             

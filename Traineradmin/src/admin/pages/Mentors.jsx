@@ -99,14 +99,14 @@ const Mentors = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-7">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
           <UserCheck className="text-blue-600" />
           Mentor Management
         </h1>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-100 hover:shadow-blue-200 active:scale-95 text-sm"
+className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-100 hover:shadow-blue-200 active:scale-95 text-sm"
         >
           {showForm ? 'Cancel' : <><Plus size={18} /> Register Mentor</>}
         </button>
@@ -185,7 +185,7 @@ const Mentors = () => {
         ) : mentors.length === 0 ? (
           <div className="p-8 text-center text-slate-500">No mentors registered yet. Click "Register Mentor" to start.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-xs font-black text-slate-400 uppercase tracking-wider">
@@ -245,8 +245,72 @@ const Mentors = () => {
               </tbody>
             </table>
           </div>
+          
         )}
       </div>
+      <div className="md:hidden p-4 space-y-4">
+  {mentors.map((mentor) => (
+    <div
+      key={mentor.id}
+      className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+          <Shield size={18} className="text-blue-600" />
+        </div>
+
+        <div className="flex-1">
+          <h3 className="font-bold text-slate-800">
+            {mentor.name}
+          </h3>
+
+          <p className="text-xs text-slate-500 mt-1">
+            {mentor.email}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-500">Course</span>
+          <span className="font-semibold text-slate-700">
+            {mentor.assigned_course || "All Courses"}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span className="text-slate-500 text-sm">Status</span>
+
+          <span
+            className={`text-[10px] font-black uppercase px-2 py-1 rounded ${
+              mentor.is_active
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-slate-100 text-slate-500"
+            }`}
+          >
+            {mentor.is_active ? "Active" : "Inactive"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end gap-2">
+        <button
+          onClick={() => setSelectedMentorForStudents(mentor)}
+          className="p-2 text-blue-500 bg-blue-50 rounded-xl"
+        >
+          <Eye size={16} />
+        </button>
+
+        <button
+          onClick={() => handleDelete(mentor.id)}
+          className="p-2 text-rose-500 bg-rose-50 rounded-xl"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
 
       {/* ASSIGNED STUDENTS MODAL */}
       {selectedMentorForStudents && (

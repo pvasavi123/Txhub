@@ -215,19 +215,19 @@ const ClassManagement = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 lg:px-8 pt-6 relative">
+    <div className="space-y-6 max-w-7xl mx-auto px-3 lg:px-8 pt-20 lg:pt-5 relative">
 
       {/* ── Header ── */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-slate-800">My Courses</h2>
         <div className="flex gap-2">
-          <button
+          {/* <button
             onClick={fetchCourses}
             className="p-2.5 border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 rounded-xl transition-colors"
             title="Refresh"
           >
             <RefreshCw size={15} />
-          </button>
+          </button> */}
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-95"

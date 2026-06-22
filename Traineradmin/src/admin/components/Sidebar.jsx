@@ -121,7 +121,7 @@ const Sidebar = () => {
           <div className="flex items-center justify-center h-14 w-14 bg-blue-100 text-blue-600 font-bold rounded-xl text-xl self-start">
             TX
           </div>
-          <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] ml-1">Admin Pro</span>
+          <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] ml-1">Super Admin</span>
         </div>
 
         <nav className="flex-1 space-y-2">

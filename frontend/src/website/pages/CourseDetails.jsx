@@ -1,10 +1,21 @@
-
 import React, { useContext, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import SEO from "../components/SEO";
-import { Star, CheckCircle, Clock, Calendar, MapPin, Globe, BookOpen, GraduationCap, ArrowRight, Video, Lock } from "lucide-react";
+import {
+  Star,
+  CheckCircle,
+  Clock,
+  Calendar,
+  MapPin,
+  Globe,
+  BookOpen,
+  GraduationCap,
+  ArrowRight,
+  Video,
+  Lock,
+} from "lucide-react";
 import awsImg from "../assets/aws.jpg";
 import javaImg from "../assets/java_full.jpg";
 import reactImg from "../assets/react_full.jpg";
@@ -27,43 +38,124 @@ const getAssetImage = (title) => {
   if (t.includes("aws") || t.includes("devops")) return awsImg;
   if (t.includes("ml") || t.includes("machine")) return mlImg;
   if (t.includes("ui") || t.includes("ux") || t.includes("figma")) return uiImg;
-  if (t.includes("data science") || t.includes("datascience")) return dataScienceImg;
+  if (t.includes("data science") || t.includes("datascience"))
+    return dataScienceImg;
   if (t.includes("data") || t.includes("analytics")) return dataAnalyticsImg;
   if (t.includes("front end") || t.includes("frontend")) return frontendImg;
-  if (t.includes("soft") || t.includes("skills") || t.includes("leadership") || t.includes("speaking")) return softImg;
-  if (t.includes("testing") || t.includes("qa") || t.includes("selenium") || t.includes("manual")) return "https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&q=80";
+  if (
+    t.includes("soft") ||
+    t.includes("skills") ||
+    t.includes("leadership") ||
+    t.includes("speaking")
+  )
+    return softImg;
+  if (
+    t.includes("testing") ||
+    t.includes("qa") ||
+    t.includes("selenium") ||
+    t.includes("manual")
+  )
+    return "https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&q=80";
   return null;
 };
 
 const getCourseFallbackImage = (title, category) => {
-  const t = (title || '').toLowerCase();
-  const c = (category || '').toLowerCase();
-  const h = title ? Math.abs(title.split('').reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0)) : 0;
-  
+  const t = (title || "").toLowerCase();
+  const c = (category || "").toLowerCase();
+  const h = title
+    ? Math.abs(
+        title
+          .split("")
+          .reduce((hash, char) => (hash << 5) - hash + char.charCodeAt(0), 0),
+      )
+    : 0;
+
   const pools = {
-    software: ['1517694712202-14dd9538aa97', '1555066931-4365d14bab8c', '1526374965328-7f61d4dc18c5'],
-    devops: ['1667372393119-3d4c48d07fc9', '1517077304055-6e89abbf09b0', '1451187580459-43490279c0fa'],
-    testing: ['1607799279861-4dd421887fb3', '1516321318423-f06f85e504b3', '1498050108023-c5249f4df085'],
-    design: ['1561070791-2526d30994b5', '1586717791821-3f44a563fa4c', '1454165804606-c3d57bc86b40'],
-    ai: ['1677442136019-21780ecad995', '1677442135703-1787eea5ce01', '1518770660439-4636190af475', '1550751827-4bd374c3f58b'],
-    data: ['1551288049-bebda4e38f71', '1460925895917-afdab827c52f', '1488590528505-98d2b5aba04b'],
-    default: ['1498050108023-c5249f4df085', '1488590528505-98d2b5aba04b', '1454165804606-c3d57bc86b40']
+    software: [
+      "1517694712202-14dd9538aa97",
+      "1555066931-4365d14bab8c",
+      "1526374965328-7f61d4dc18c5",
+    ],
+    devops: [
+      "1667372393119-3d4c48d07fc9",
+      "1517077304055-6e89abbf09b0",
+      "1451187580459-43490279c0fa",
+    ],
+    testing: [
+      "1607799279861-4dd421887fb3",
+      "1516321318423-f06f85e504b3",
+      "1498050108023-c5249f4df085",
+    ],
+    design: [
+      "1561070791-2526d30994b5",
+      "1586717791821-3f44a563fa4c",
+      "1454165804606-c3d57bc86b40",
+    ],
+    ai: [
+      "1677442136019-21780ecad995",
+      "1677442135703-1787eea5ce01",
+      "1518770660439-4636190af475",
+      "1550751827-4bd374c3f58b",
+    ],
+    data: [
+      "1551288049-bebda4e38f71",
+      "1460925895917-afdab827c52f",
+      "1488590528505-98d2b5aba04b",
+    ],
+    default: [
+      "1498050108023-c5249f4df085",
+      "1488590528505-98d2b5aba04b",
+      "1454165804606-c3d57bc86b40",
+    ],
   };
 
   let pool = pools.default;
-  if (t.includes('react') || t.includes('javascript') || t.includes('python') || t.includes('java') || t.includes('mern') || t.includes('backend') || t.includes('frontend')) pool = pools.software;
-  else if (t.includes('aws') || t.includes('devops') || t.includes('docker') || t.includes('cloud')) pool = pools.devops;
-  else if (t.includes('testing') || t.includes('selenium') || t.includes('automation') || t.includes('qa')) pool = pools.testing;
-  else if (t.includes('figma') || t.includes('ui') || t.includes('ux') || t.includes('design')) pool = pools.design;
-  else if (t.includes('machine') || t.includes('ai') || t.includes('ml')) pool = pools.ai;
-  else if (t.includes('data') || t.includes('analytics') || t.includes('language processing')) pool = pools.data;
-  else if (c.includes('software')) pool = pools.software;
-  else if (c.includes('testing')) pool = pools.testing;
-  else if (c.includes('design')) pool = pools.design;
-  else if (c.includes('ai') || c.includes('machine')) pool = pools.ai;
-  else if (c.includes('devops')) pool = pools.devops;
-  else if (c.includes('data')) pool = pools.data;
-  
+  if (
+    t.includes("react") ||
+    t.includes("javascript") ||
+    t.includes("python") ||
+    t.includes("java") ||
+    t.includes("mern") ||
+    t.includes("backend") ||
+    t.includes("frontend")
+  )
+    pool = pools.software;
+  else if (
+    t.includes("aws") ||
+    t.includes("devops") ||
+    t.includes("docker") ||
+    t.includes("cloud")
+  )
+    pool = pools.devops;
+  else if (
+    t.includes("testing") ||
+    t.includes("selenium") ||
+    t.includes("automation") ||
+    t.includes("qa")
+  )
+    pool = pools.testing;
+  else if (
+    t.includes("figma") ||
+    t.includes("ui") ||
+    t.includes("ux") ||
+    t.includes("design")
+  )
+    pool = pools.design;
+  else if (t.includes("machine") || t.includes("ai") || t.includes("ml"))
+    pool = pools.ai;
+  else if (
+    t.includes("data") ||
+    t.includes("analytics") ||
+    t.includes("language processing")
+  )
+    pool = pools.data;
+  else if (c.includes("software")) pool = pools.software;
+  else if (c.includes("testing")) pool = pools.testing;
+  else if (c.includes("design")) pool = pools.design;
+  else if (c.includes("ai") || c.includes("machine")) pool = pools.ai;
+  else if (c.includes("devops")) pool = pools.devops;
+  else if (c.includes("data")) pool = pools.data;
+
   return `https://images.unsplash.com/photo-${pool[h % pool.length]}?q=80&w=600&h=300&fit=crop`;
 };
 
@@ -75,7 +167,8 @@ const courseData = [
   {
     id: 0,
     title: "React Full Stack Development",
-    description: "Master the art of building scalable web applications using the MERN stack (MongoDB, Express, React, Node.js). This course takes you from frontend fundamentals to advanced backend architecture.",
+    description:
+      "Master the art of building scalable web applications using the MERN stack (MongoDB, Express, React, Node.js). This course takes you from frontend fundamentals to advanced backend architecture.",
     price: "4,999",
     rating: "4.9",
     students: "1,240 students",
@@ -87,34 +180,46 @@ const courseData = [
     category: "Software Development",
     img: reactImg,
     instructor: "John Developer",
-    instructorBio: "Senior Full Stack Engineer with 10+ years of experience in React and Node.js ecosystems.",
+    instructorBio:
+      "Senior Full Stack Engineer with 10+ years of experience in React and Node.js ecosystems.",
     instructorImage: "https://randomuser.me/api/portraits/men/32.jpg",
     instructorCourses: [
-      { id: 3, title: "Java Full Stack Development", img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4", price: "3,999" },
-      { id: 5, title: "Machine Learning Masterclass", img: "https://images.unsplash.com/photo-1677442136019-21780ecad995", price: "3,999" }
+      {
+        id: 3,
+        title: "Java Full Stack Development",
+        img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4",
+        price: "3,999",
+      },
+      {
+        id: 5,
+        title: "Machine Learning Masterclass",
+        img: "https://images.unsplash.com/photo-1677442136019-21780ecad995",
+        price: "3,999",
+      },
     ],
     learn: [
       "Modern React Hook & Context API",
       "Node.js & Express REST APIs",
       "MongoDB Database Design",
-      "Fullstack Authentication with JWT"
+      "Fullstack Authentication with JWT",
     ],
     content: [
       "Introduction to Modern Web Development",
       "React Components & State Management",
       "Backend Development with Node.js",
-      "Database Integration & Deployment"
+      "Database Integration & Deployment",
     ],
     requirements: [
       "Basic HTML, CSS, and JavaScript knowledge",
       "A laptop with at least 8GB RAM",
-      "Curiosity to learn and build projects"
-    ]
+      "Curiosity to learn and build projects",
+    ],
   },
   {
     id: 1,
     title: "Selenium Automation Testing",
-    description: "Go from manual tester to automation expert. Learn how to write robust, maintainable test scripts using Selenium WebDriver and Java for enterprise-level applications.",
+    description:
+      "Go from manual tester to automation expert. Learn how to write robust, maintainable test scripts using Selenium WebDriver and Java for enterprise-level applications.",
     price: "4,999",
     rating: "4.7",
     students: "890 students",
@@ -130,29 +235,36 @@ const courseData = [
       "Selenium WebDriver Architectures",
       "TestNG & Maven Integration",
       "Page Object Model (POM) Design",
-      "Cucumber & BDD Frameworks"
+      "Cucumber & BDD Frameworks",
     ],
     content: [
       "Automation Fundamentals",
       "Writing Your First Test Script",
       "Advanced Locators & Actions",
-      "Framework Development from Scratch"
+      "Framework Development from Scratch",
     ],
     requirements: [
       "Basic programming knowledge",
       "Interest in automation and QA",
-      "A machine with Java installed"
+      "A machine with Java installed",
     ],
-    instructorBio: "Expert QA Automation Engineer specialized in Selenium and Java testing frameworks.",
+    instructorBio:
+      "Expert QA Automation Engineer specialized in Selenium and Java testing frameworks.",
     instructorImage: "https://randomuser.me/api/portraits/men/45.jpg",
     instructorCourses: [
-      { id: 0, title: "React Full Stack", img: "https://images.unsplash.com/photo-1555066931-4365d14bab8c", price: "3,999" }
-    ]
+      {
+        id: 0,
+        title: "React Full Stack",
+        img: "https://images.unsplash.com/photo-1555066931-4365d14bab8c",
+        price: "3,999",
+      },
+    ],
   },
   {
     id: 2,
     title: "Figma UI/UX Complete Guide",
-    description: "Design stunning user interfaces and research impactful user experiences. This course covers everything from wireframing to high-fidelity prototyping in Figma.",
+    description:
+      "Design stunning user interfaces and research impactful user experiences. This course covers everything from wireframing to high-fidelity prototyping in Figma.",
     price: "4,999",
     rating: "4.8",
     students: "1,050 students",
@@ -168,24 +280,25 @@ const courseData = [
       "User Research & Empathy Mapping",
       "Wireframing & Visual Design",
       "Interactive Prototyping in Figma",
-      "Design Systems & Handover"
+      "Design Systems & Handover",
     ],
     content: [
       "UX Design Foundations",
       "Mastering Figma Layouts & Components",
       "Visual Design Principles",
-      "Portfolio Project & Review"
+      "Portfolio Project & Review",
     ],
     requirements: [
       "No prior design experience needed",
       "A creative mindset",
-      "Figma account (free version is fine)"
-    ]
+      "Figma account (free version is fine)",
+    ],
   },
   {
     id: 3,
     title: "Java Full Stack Development",
-    description: "Become an enterprise-ready Java developer. Learn Core Java, Spring Boot, and React to build secure, high-performance web applications used by major corporations.",
+    description:
+      "Become an enterprise-ready Java developer. Learn Core Java, Spring Boot, and React to build secure, high-performance web applications used by major corporations.",
     price: "4,999",
     rating: "4.6",
     students: "980 students",
@@ -201,24 +314,25 @@ const courseData = [
       "Core Java & Multi-threading",
       "Spring Boot & Microservices",
       "React Integration with Java APIs",
-      "Database Security & SQL"
+      "Database Security & SQL",
     ],
     content: [
       "Java Language Deep-Dive",
       "Developing Backend with Spring",
       "Frontend with React & Redux",
-      "Project Deployment & CI/CD"
+      "Project Deployment & CI/CD",
     ],
     requirements: [
       "Basic understanding of programming",
       "Familiarity with logic and math",
-      "Passionate about enterprise tech"
-    ]
+      "Passionate about enterprise tech",
+    ],
   },
   {
     id: 4,
     title: "AWS & DevOps",
-    description: "Master the cloud. Learn to manage infrastructure at scale using AWS services, Docker, Kubernetes, and modern DevOps tools to speed up delivery cycles.",
+    description:
+      "Master the cloud. Learn to manage infrastructure at scale using AWS services, Docker, Kubernetes, and modern DevOps tools to speed up delivery cycles.",
     price: "4,999",
     rating: "4.9",
     students: "1,400 students",
@@ -234,24 +348,25 @@ const courseData = [
       "AWS Core Services (EC2, S3, RDS)",
       "Containerization with Docker",
       "Kubernetes Orchestration",
-      "Jenkins & CI/CD Pipelines"
+      "Jenkins & CI/CD Pipelines",
     ],
     content: [
       "Cloud Foundation & IAM",
       "Virtualization & Networking",
       "Infrastructure as Code",
-      "Monitoring & Scaling Strategies"
+      "Monitoring & Scaling Strategies",
     ],
     requirements: [
       "Basic Networking knowledge",
       "Familiarity with the Linux terminal",
-      "An active AWS Free Tier account"
-    ]
+      "An active AWS Free Tier account",
+    ],
   },
   {
     id: 5,
     title: "Machine Learning",
-    description: "Step into the world of Data Science and AI. Learn the math, the algorithms, and the Python tools required to build predictive models and analyze complex datasets.",
+    description:
+      "Step into the world of Data Science and AI. Learn the math, the algorithms, and the Python tools required to build predictive models and analyze complex datasets.",
     price: "4,999",
     rating: "4.8",
     students: "1,200 students",
@@ -267,24 +382,25 @@ const courseData = [
       "Supervised & Unsupervised Learning",
       "Python Data Science Libraries",
       "Neural Networks & Deep Learning",
-      "Model Training & Optimizaton"
+      "Model Training & Optimizaton",
     ],
     content: [
       "Statistics & Linear Algebra",
       "Regression & Decision Trees",
       "Natural Language Processing",
-      "AI Ethical Considerations"
+      "AI Ethical Considerations",
     ],
     requirements: [
       "Intermediate Python knowledge",
       "Basic understanding of Calculus",
-      "A machine capable of running ML libs"
-    ]
+      "A machine capable of running ML libs",
+    ],
   },
   {
     id: 6,
     title: "Data Science Fundamentals",
-    description: "Learn the core concepts of Data Science, including data exploration, visualization, and statistical modeling. Master the tools needed to turn raw data into actionable insights.",
+    description:
+      "Learn the core concepts of Data Science, including data exploration, visualization, and statistical modeling. Master the tools needed to turn raw data into actionable insights.",
     price: "4,999",
     rating: "4.8",
     students: "2,100 students",
@@ -296,30 +412,32 @@ const courseData = [
     category: "Data Science",
     img: dataScienceImg,
     instructor: "Sarah Data",
-    instructorBio: "Senior Data Scientist with 7+ years of experience in predictive modeling and machine learning.",
+    instructorBio:
+      "Senior Data Scientist with 7+ years of experience in predictive modeling and machine learning.",
     instructorImage: "https://randomuser.me/api/portraits/women/3.jpg",
     learn: [
       "Python for Data Science",
       "Exploratory Data Analysis",
       "Statistical Hypothesis Testing",
-      "Data Visualization with Seaborn"
+      "Data Visualization with Seaborn",
     ],
     content: [
       "Introduction to Data Science",
       "Data Wrangling & Cleaning",
       "Statistical Foundations",
-      "Final Capstone Project"
+      "Final Capstone Project",
     ],
     requirements: [
       "Basic math skills",
       "No prior coding experience required",
-      "A curious and analytical mind"
-    ]
+      "A curious and analytical mind",
+    ],
   },
   {
     id: 7,
     title: "MERN Stack Crash Course",
-    description: "Master the art of building scalable web applications using the MERN stack (MongoDB, Express, React, Node.js). This course takes you from frontend fundamentals to advanced backend architecture.",
+    description:
+      "Master the art of building scalable web applications using the MERN stack (MongoDB, Express, React, Node.js). This course takes you from frontend fundamentals to advanced backend architecture.",
     price: "4,999",
     rating: "4.7",
     students: "1,850 students",
@@ -331,34 +449,46 @@ const courseData = [
     category: "Software Development",
     img: mernImg,
     instructor: "John Developer",
-    instructorBio: "Senior Full Stack Engineer with 10+ years of experience in React and Node.js ecosystems.",
+    instructorBio:
+      "Senior Full Stack Engineer with 10+ years of experience in React and Node.js ecosystems.",
     instructorImage: "https://randomuser.me/api/portraits/men/32.jpg",
     instructorCourses: [
-      { id: 3, title: "Java Full Stack Development", img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4", price: "3,999" },
-      { id: 5, title: "Machine Learning Masterclass", img: "https://images.unsplash.com/photo-1677442136019-21780ecad995", price: "3,999" }
+      {
+        id: 3,
+        title: "Java Full Stack Development",
+        img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4",
+        price: "3,999",
+      },
+      {
+        id: 5,
+        title: "Machine Learning Masterclass",
+        img: "https://images.unsplash.com/photo-1677442136019-21780ecad995",
+        price: "3,999",
+      },
     ],
     learn: [
       "Modern React Hook & Context API",
       "Node.js & Express REST APIs",
       "MongoDB Database Design",
-      "Fullstack Authentication with JWT"
+      "Fullstack Authentication with JWT",
     ],
     content: [
       "Introduction to Modern Web Development",
       "React Components & State Management",
       "Backend Development with Node.js",
-      "Database Integration & Deployment"
+      "Database Integration & Deployment",
     ],
     requirements: [
       "Basic HTML, CSS, and JavaScript knowledge",
       "A laptop with at least 8GB RAM",
-      "Curiosity to learn and build projects"
-    ]
+      "Curiosity to learn and build projects",
+    ],
   },
   {
     id: 8,
     title: "Front End Web Development",
-    description: "Build beautiful, responsive, and interactive user interfaces using modern HTML, CSS, and JavaScript. Master React and Tailwind CSS to create professional-grade web applications.",
+    description:
+      "Build beautiful, responsive, and interactive user interfaces using modern HTML, CSS, and JavaScript. Master React and Tailwind CSS to create professional-grade web applications.",
     price: "4,999",
     rating: "4.9",
     students: "3,200 students",
@@ -370,30 +500,32 @@ const courseData = [
     category: "Software Development",
     img: frontendImg,
     instructor: "Sarah Frontend",
-    instructorBio: "Expert UI Developer with 8+ years of experience in modern frontend frameworks.",
+    instructorBio:
+      "Expert UI Developer with 8+ years of experience in modern frontend frameworks.",
     instructorImage: "https://randomuser.me/api/portraits/women/44.jpg",
     learn: [
       "Semantic HTML5 & Modern CSS",
       "Advanced JavaScript & ES6+",
       "React Components & State",
-      "Responsive Design & Tailwind"
+      "Responsive Design & Tailwind",
     ],
     content: [
       "Web Foundations",
       "JavaScript Deep Dive",
       "Modern UI with React",
-      "Performance & Deployment"
+      "Performance & Deployment",
     ],
     requirements: [
       "Basic computer literacy",
       "Interest in design",
-      "No prior coding needed"
-    ]
+      "No prior coding needed",
+    ],
   },
   {
     id: 9,
     title: "Python Full Stack",
-    description: "Become a versatile developer by mastering Python for both backend and frontend development. Learn Django, PostgreSQL, and React to build robust full-stack applications.",
+    description:
+      "Become a versatile developer by mastering Python for both backend and frontend development. Learn Django, PostgreSQL, and React to build robust full-stack applications.",
     price: "4,999",
     rating: "4.8",
     students: "900 students",
@@ -405,30 +537,32 @@ const courseData = [
     category: "Software Development",
     img: pythonImg,
     instructor: "Guido Dev",
-    instructorBio: "Senior Python Architect specialized in Django and scalable backend systems.",
+    instructorBio:
+      "Senior Python Architect specialized in Django and scalable backend systems.",
     instructorImage: "https://randomuser.me/api/portraits/men/11.jpg",
     learn: [
       "Python Programming Basics",
       "Django Web Framework",
       "REST APIs with Django",
-      "React Frontend Integration"
+      "React Frontend Integration",
     ],
     content: [
       "Python Fundamentals",
       "Web Apps with Django",
       "Database Design & SQL",
-      "Frontend Development"
+      "Frontend Development",
     ],
     requirements: [
       "Basic logical thinking",
       "Laptop with 8GB RAM",
-      "Dedication to learn"
-    ]
+      "Dedication to learn",
+    ],
   },
   {
     id: 10,
     title: "Data Analytics Masterclass",
-    description: "Unlock insights from data using Python, SQL, and PowerBI. Learn to clean, analyze, and visualize data to drive business decisions.",
+    description:
+      "Unlock insights from data using Python, SQL, and PowerBI. Learn to clean, analyze, and visualize data to drive business decisions.",
     price: "4,999",
     rating: "4.6",
     students: "1,150 students",
@@ -440,30 +574,32 @@ const courseData = [
     category: "Data Science",
     img: dataAnalyticsImg,
     instructor: "Dr. Data",
-    instructorBio: "Data Scientist with a PhD in Statistics and 10+ years of corporate analytics experience.",
+    instructorBio:
+      "Data Scientist with a PhD in Statistics and 10+ years of corporate analytics experience.",
     instructorImage: "https://randomuser.me/api/portraits/women/65.jpg",
     learn: [
       "Data Cleaning with Pandas",
       "SQL for Data Analysis",
       "Visualizing with Tableau/PowerBI",
-      "Statistical Analysis Basics"
+      "Statistical Analysis Basics",
     ],
     content: [
       "Introduction to Analytics",
       "Advanced SQL Queries",
       "Python for Data Science",
-      "Business Intelligence Tools"
+      "Business Intelligence Tools",
     ],
     requirements: [
       "Basic math knowledge",
       "Interest in numbers",
-      "Excel familiarity is a plus"
-    ]
+      "Excel familiarity is a plus",
+    ],
   },
   {
     id: 11,
     title: "Advanced Software Testing",
-    description: "Master enterprise-level testing strategies. Learn about performance testing, security testing, and advanced automation frameworks.",
+    description:
+      "Master enterprise-level testing strategies. Learn about performance testing, security testing, and advanced automation frameworks.",
     price: "4,499",
     rating: "4.8",
     students: "1,450 students",
@@ -475,30 +611,32 @@ const courseData = [
     category: "Testing",
     img: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80",
     instructor: "Mike Tester",
-    instructorBio: "QA Lead with expertise in performance and security testing for large-scale systems.",
+    instructorBio:
+      "QA Lead with expertise in performance and security testing for large-scale systems.",
     instructorImage: "https://randomuser.me/api/portraits/men/22.jpg",
     learn: [
       "Performance Testing (JMeter)",
       "Security & Pentesting Basics",
       "CI/CD in Testing",
-      "Cloud Testing Strategies"
+      "Cloud Testing Strategies",
     ],
     content: [
       "Advanced Test Planning",
       "Automated Performance Tests",
       "Security Vulnerability Checks",
-      "Agile Testing Mindset"
+      "Agile Testing Mindset",
     ],
     requirements: [
       "Basic QA knowledge",
       "Familiarity with Selenium",
-      "Analytical mindset"
-    ]
+      "Analytical mindset",
+    ],
   },
   {
     id: 12,
     title: "API Testing with Postman",
-    description: "Learn how to test and document REST APIs efficiently using Postman. Automate your API tests and ensure high-quality communication between services.",
+    description:
+      "Learn how to test and document REST APIs efficiently using Postman. Automate your API tests and ensure high-quality communication between services.",
     price: "4,999",
     rating: "4.9",
     students: "980 students",
@@ -510,30 +648,32 @@ const courseData = [
     category: "Testing",
     img: "https://images.unsplash.com/photo-1563206767-5b18f218e8de?w=800&q=80",
     instructor: "Alex API",
-    instructorBio: "Backend Developer and API specialist with a passion for quality assurance.",
+    instructorBio:
+      "Backend Developer and API specialist with a passion for quality assurance.",
     instructorImage: "https://randomuser.me/api/portraits/men/5.jpg",
     learn: [
       "REST API Fundamentals",
       "Postman Collections & Scripts",
       "API Automation Testing",
-      "Mocking & Documentation"
+      "Mocking & Documentation",
     ],
     content: [
       "Introduction to APIs",
       "Postman Essentials",
       "Scripting & Automation",
-      "Integration Testing"
+      "Integration Testing",
     ],
     requirements: [
       "Basic understanding of Web",
       "Curiosity about APIs",
-      "Laptop installed with Postman"
-    ]
+      "Laptop installed with Postman",
+    ],
   },
   {
     id: 13,
     title: "Mobile App Automation (Appium)",
-    description: "Master mobile application testing for iOS and Android. Learn to write automated test scripts using Appium and enhance mobile app quality.",
+    description:
+      "Master mobile application testing for iOS and Android. Learn to write automated test scripts using Appium and enhance mobile app quality.",
     price: "4,999",
     rating: "4.7",
     students: "600 students",
@@ -545,30 +685,32 @@ const courseData = [
     category: "Testing",
     img: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
     instructor: "Mobile Guru",
-    instructorBio: "Expert Mobile QA Engineer with experience in both native and hybrid app testing.",
+    instructorBio:
+      "Expert Mobile QA Engineer with experience in both native and hybrid app testing.",
     instructorImage: "https://randomuser.me/api/portraits/men/88.jpg",
     learn: [
       "Mobile Testing Ecosystem",
       "Appium Framework Setup",
       "Android & iOS Automation",
-      "Mobile Device Cloud Testing"
+      "Mobile Device Cloud Testing",
     ],
     content: [
       "Appium Fundamentals",
       "Handling Mobile Elements",
       "Cross-Platform Testing",
-      "Continuous Integration for Mobile"
+      "Continuous Integration for Mobile",
     ],
     requirements: [
       "Basic Java/Python knowledge",
       "Machine with Android Studio",
-      "Passion for mobile tech"
-    ]
+      "Passion for mobile tech",
+    ],
   },
   {
     id: 14,
     title: "Leadership & Team Management",
-    description: "Transition from an individual contributor to an effective leader. Learn to manage teams, resolve conflicts, and drive project success.",
+    description:
+      "Transition from an individual contributor to an effective leader. Learn to manage teams, resolve conflicts, and drive project success.",
     price: "4,999",
     rating: "4.9",
     students: "1,120 students",
@@ -580,30 +722,32 @@ const courseData = [
     category: "Soft Skills",
     img: "https://images.unsplash.com/photo-1552581234-26160f608093?w=800&q=80",
     instructor: "Leader Jane",
-    instructorBio: "Senior Management Consultant with 15+ years of experience in leading multi-national teams.",
+    instructorBio:
+      "Senior Management Consultant with 15+ years of experience in leading multi-national teams.",
     instructorImage: "https://randomuser.me/api/portraits/women/10.jpg",
     learn: [
       "Strategic Planning",
       "Conflict Resolution",
       "Agile Team Leadership",
-      "Effective Communication"
+      "Effective Communication",
     ],
     content: [
       "Leadership Styles",
       "Team Building & Dynamics",
       "Performance Management",
-      "Stakeholder Communication"
+      "Stakeholder Communication",
     ],
     requirements: [
       "Professional experience",
       "Willingness to grow",
-      "Empathy and open-mindedness"
-    ]
+      "Empathy and open-mindedness",
+    ],
   },
   {
     id: 15,
     title: "Public Speaking Mastery",
-    description: "Overcome stage fright and become a confident speaker. Learn the art of storytelling, body language, and persuasive communication.",
+    description:
+      "Overcome stage fright and become a confident speaker. Learn the art of storytelling, body language, and persuasive communication.",
     price: "4,999",
     rating: "4.8",
     students: "850 students",
@@ -615,30 +759,32 @@ const courseData = [
     category: "Soft Skills",
     img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80",
     instructor: "Orator Mark",
-    instructorBio: "Professional speaker and toastmaster with over 500+ successful stage presentations.",
+    instructorBio:
+      "Professional speaker and toastmaster with over 500+ successful stage presentations.",
     instructorImage: "https://randomuser.me/api/portraits/men/33.jpg",
     learn: [
       "Vocal Variety & Tone",
       "Body Language Mastery",
       "Storytelling Techniques",
-      "Handling Q&A Sessions"
+      "Handling Q&A Sessions",
     ],
     content: [
       "Speech Preparation",
       "Engagement Strategies",
       "Visual Aids & Slides",
-      "Real-world Practice"
+      "Real-world Practice",
     ],
     requirements: [
       "Desire to communicate better",
       "Regular practice commitment",
-      "Open to feedback"
-    ]
+      "Open to feedback",
+    ],
   },
   {
     id: 16,
     title: "Critical Thinking & Problem Solving",
-    description: "Enhance your decision-making skills and learn to solve complex problems logically. Develop a framework for analytical thinking in professional environments.",
+    description:
+      "Enhance your decision-making skills and learn to solve complex problems logically. Develop a framework for analytical thinking in professional environments.",
     price: "4,999",
     rating: "4.7",
     students: "950 students",
@@ -650,30 +796,32 @@ const courseData = [
     category: "Soft Skills",
     img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80",
     instructor: "Thinker Sam",
-    instructorBio: "Cognitive psychologist and corporate strategy consultant specializing in decision science.",
+    instructorBio:
+      "Cognitive psychologist and corporate strategy consultant specializing in decision science.",
     instructorImage: "https://randomuser.me/api/portraits/men/15.jpg",
     learn: [
       "Logical Fallacies & Biases",
       "Root Cause Analysis",
       "Creative Solution Design",
-      "Strategic Decision Making"
+      "Strategic Decision Making",
     ],
     content: [
       "Thinking Frameworks",
       "Analyzing Complex Data",
       "Problem-Solving Workshops",
-      "Collaborative Decisions"
+      "Collaborative Decisions",
     ],
     requirements: [
       "Analytical mindset",
       "Eagerness to learn",
-      "No specific prerequisites"
-    ]
+      "No specific prerequisites",
+    ],
   },
   {
     id: 99,
     title: "Manual Testing Complete Course",
-    description: "Master the fundamentals of software testing. Learn about test planning, execution, bug reporting, and the software development lifecycle from a QA perspective.",
+    description:
+      "Master the fundamentals of software testing. Learn about test planning, execution, bug reporting, and the software development lifecycle from a QA perspective.",
     price: "4,999",
     rating: "4.8",
     students: "1,520 students",
@@ -685,33 +833,48 @@ const courseData = [
     category: "Testing",
     img: "https://images.unsplash.com/photo-1542626991-cbc4e32524cc?w=800&q=80",
     instructor: "Kevin QA",
-    instructorBio: "QA Manager with 12+ years of experience in manual and automated testing processes.",
+    instructorBio:
+      "QA Manager with 12+ years of experience in manual and automated testing processes.",
     instructorImage: "https://randomuser.me/api/portraits/men/42.jpg",
     learn: [
       "SDLC & STLC Methodologies",
       "Test Case Design Techniques",
       "Defect Lifecycle & Reporting",
-      "Agile & Scrum Testing"
+      "Agile & Scrum Testing",
     ],
     content: [
       "Testing Fundamentals",
       "Types of Testing",
       "Test Planning & Management",
-      "Real-world Project Testing"
+      "Real-world Project Testing",
     ],
     requirements: [
       "Attention to detail",
       "Basic computer knowledge",
-      "Communication skills"
-    ]
+      "Communication skills",
+    ],
   },
 ];
 
-
 const relatedCourses = [
-  { id: 3, title: "Java Full Stack Development", img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4", price: "3,999" },
-  { id: 4, title: "AWS & DevOps", img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa", price: "3,999" },
-  { id: 2, title: "Figma UI/UX Complete Guide", img: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e", price: "3,999" },
+  {
+    id: 3,
+    title: "Java Full Stack Development",
+    img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4",
+    price: "3,999",
+  },
+  {
+    id: 4,
+    title: "AWS & DevOps",
+    img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa",
+    price: "3,999",
+  },
+  {
+    id: 2,
+    title: "Figma UI/UX Complete Guide",
+    img: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e",
+    price: "3,999",
+  },
 ];
 
 const CourseDetails = () => {
@@ -732,32 +895,56 @@ const CourseDetails = () => {
           const res = await fetch("http://127.0.0.1:8000/api/courses-list/");
           const data = await res.json();
           if (res.ok) {
-            const match = data.find(c => (c.id + 1000).toString() === id);
+            const match = data.find((c) => (c.id + 1000).toString() === id);
             if (match) {
-               setDbCourse({
-                 id: match.id + 1000,
-                 title: match.title,
-                 description: match.details || `Learn ${match.title} with expert instructors.`,
-                 price: match.price || "4,999",
-                 rating: "4.8",
-                 students: "New",
-                 language: "English",
-                 duration: match.duration || "Flexible",
-                 mode: "Online",
-                 location: "Remote",
-                 batchStart: "Flexible",
-                 category: match.category || "Software Development",
-                 img: getAssetImage(match.title) || (match.imageUrl ? (match.imageUrl.startsWith("http") ? match.imageUrl : `http://127.0.0.1:8000${match.imageUrl}`) : getCourseFallbackImage(match.title, match.category)),
-                 instructor: "TXhub Expert",
-                 instructorBio: "Experienced industry professional with a track record of success.",
-                 instructorImage: "https://randomuser.me/api/portraits/men/32.jpg",
-                 learn: ["Core concepts and fundamentals", "Hands-on projects", "Industry best practices"],
-                 content: ["Introduction", "Core Modules", "Advanced Topics", "Final Project"],
-                 requirements: ["Basic computer skills", "Willingness to learn and practice"]
-               });
+              setDbCourse({
+                id: match.id + 1000,
+                title: match.title,
+                description:
+                  match.details ||
+                  `Learn ${match.title} with expert instructors.`,
+                price: match.price || "4,999",
+                rating: "4.8",
+                students: "New",
+                language: "English",
+                duration: match.duration || "Flexible",
+                mode: "Online",
+                location: "Remote",
+                batchStart: "Flexible",
+                category: match.category || "Software Development",
+                img:
+                  getAssetImage(match.title) ||
+                  (match.imageUrl
+                    ? match.imageUrl.startsWith("http")
+                      ? match.imageUrl
+                      : `http://127.0.0.1:8000${match.imageUrl}`
+                    : getCourseFallbackImage(match.title, match.category)),
+                instructor: "TXhub Expert",
+                instructorBio:
+                  "Experienced industry professional with a track record of success.",
+                instructorImage:
+                  "https://randomuser.me/api/portraits/men/32.jpg",
+                learn: [
+                  "Core concepts and fundamentals",
+                  "Hands-on projects",
+                  "Industry best practices",
+                ],
+                content: [
+                  "Introduction",
+                  "Core Modules",
+                  "Advanced Topics",
+                  "Final Project",
+                ],
+                requirements: [
+                  "Basic computer skills",
+                  "Willingness to learn and practice",
+                ],
+              });
             }
           }
-        } catch (err) { console.error("DB course fetch failed"); }
+        } catch (err) {
+          console.error("DB course fetch failed");
+        }
       };
       fetchDbCourse();
     }
@@ -772,15 +959,21 @@ const CourseDetails = () => {
           const liveData = await liveRes.json();
           setCourseLiveSessions(liveData);
         }
-      } catch (err) { console.error("Live fetch failed"); }
+      } catch (err) {
+        console.error("Live fetch failed");
+      }
 
       // 2. Fetch Enrollments
       if (!user?.email) return;
       try {
-        const response = await fetch(`http://127.0.0.1:8000/api/enrollments/?email=${user.email}`);
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/enrollments/?email=${user.email}`,
+        );
         const data = await response.json();
         if (response.ok) setEnrollments(data.data || []);
-      } catch (err) { console.error("Enrollment check failed"); }
+      } catch (err) {
+        console.error("Enrollment check failed");
+      }
     };
     fetchEnrollmentsAndLive();
   }, [user]);
@@ -789,14 +982,19 @@ const CourseDetails = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
-  const course = courseData.find(c => c.id.toString() === id) || dbCourse;
+  const course = courseData.find((c) => c.id.toString() === id) || dbCourse;
 
   if (!course) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <h2 className="text-3xl font-black text-slate-800 mb-4">Course Not Found</h2>
-          <button onClick={() => navigate("/explore")} className="text-blue-600 font-bold hover:underline">
+          <h2 className="text-3xl font-black text-slate-800 mb-4">
+            Course Not Found
+          </h2>
+          <button
+            onClick={() => navigate("/explore")}
+            className="text-blue-600 font-bold hover:underline"
+          >
             ← Back to Explore
           </button>
         </div>
@@ -805,9 +1003,12 @@ const CourseDetails = () => {
   }
 
   const added = isInCart(course.title);
-  const enrollment = enrollments.find(e =>
-    (e.title && (e.title.toLowerCase().includes(course.title.toLowerCase()) || course.title.toLowerCase().includes(e.title.toLowerCase()))) ||
-    (e.items && e.items.some(item => item.id === course.id))
+  const enrollment = enrollments.find(
+    (e) =>
+      (e.title &&
+        (e.title.toLowerCase().includes(course.title.toLowerCase()) ||
+          course.title.toLowerCase().includes(e.title.toLowerCase()))) ||
+      (e.items && e.items.some((item) => item.id === course.id)),
   );
   const enrolled = enrollment?.payment_status === "completed";
   const partial = enrollment?.payment_status === "partial";
@@ -820,7 +1021,9 @@ const CourseDetails = () => {
     }
   };
 
-  const activeLiveSessions = courseLiveSessions.filter(session => session.targetCourse === course.title);
+  const activeLiveSessions = courseLiveSessions.filter(
+    (session) => session.targetCourse === course.title,
+  );
 
   const handleAddToCart = () => {
     const success = addToCart(course);
@@ -834,7 +1037,10 @@ const CourseDetails = () => {
     <>
       <SEO
         title={course.title}
-        description={course.description || `Learn ${course.title} at TXhub. Expert-led training with hands-on projects.`}
+        description={
+          course.description ||
+          `Learn ${course.title} at TXhub. Expert-led training with hands-on projects.`
+        }
         ogImage={course.img}
         ogType="article"
       />
@@ -848,8 +1054,12 @@ const CourseDetails = () => {
               <CheckCircle className="text-green-500" size={24} />
             </div>
             <div>
-              <p className="text-slate-800 font-black text-lg leading-none">{notification}</p>
-              <p className="text-slate-400 text-sm mt-1">Has been added to your cart</p>
+              <p className="text-slate-800 font-black text-lg leading-none">
+                {notification}
+              </p>
+              <p className="text-slate-400 text-sm mt-1">
+                Has been added to your cart
+              </p>
             </div>
           </div>
         </div>
@@ -857,10 +1067,8 @@ const CourseDetails = () => {
 
       <section className="pt-28 pb-16 bg-slate-50 min-h-screen">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-3 gap-10">
-
           {/* MAIN CONTENT COLUMN */}
           <div className="lg:col-span-2">
-
             {/* Featured Image & Overlays */}
             <div className="relative group overflow-hidden rounded-[2.5rem]">
               <img
@@ -887,8 +1095,12 @@ const CourseDetails = () => {
             <div className="flex flex-wrap items-center gap-6 mt-6">
               <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-xl border border-yellow-100">
                 <Star className="text-yellow-400 fill-yellow-400" size={20} />
-                <span className="font-black text-yellow-700 text-lg">{course.rating}</span>
-                <span className="text-yellow-600/50 text-sm font-bold">({course.students.split(' ')[0]})</span>
+                <span className="font-black text-yellow-700 text-lg">
+                  {course.rating}
+                </span>
+                <span className="text-yellow-600/50 text-sm font-bold">
+                  ({course.students.split(" ")[0]})
+                </span>
               </div>
 
               <div className="flex items-center gap-2 text-slate-400 font-bold italic">
@@ -910,19 +1122,47 @@ const CourseDetails = () => {
             {/* Premium Info Grid */}
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-blue-500/5 mt-10 grid grid-cols-2 md:grid-cols-3 gap-8">
               {[
-                { label: "Duration", value: course.duration, icon: <Clock className="text-blue-500" size={20} /> },
-                { label: "Batch Start", value: course.batchStart, icon: <Calendar className="text-blue-500" size={20} /> },
-                { label: "Location", value: course.location, icon: <MapPin className="text-blue-500" size={20} /> },
-                { label: "Certificate", value: "Available", icon: <GraduationCap className="text-blue-500" size={20} /> },
-                { label: "Level", value: "All Levels", icon: <BookOpen className="text-blue-500" size={20} /> },
-                { label: "Access", value: "Lifetime", icon: <Globe className="text-blue-500" size={20} /> }
+                {
+                  label: "Duration",
+                  value: course.duration,
+                  icon: <Clock className="text-blue-500" size={20} />,
+                },
+                {
+                  label: "Batch Start",
+                  value: course.batchStart,
+                  icon: <Calendar className="text-blue-500" size={20} />,
+                },
+                {
+                  label: "Location",
+                  value: course.location,
+                  icon: <MapPin className="text-blue-500" size={20} />,
+                },
+                {
+                  label: "Certificate",
+                  value: "Available",
+                  icon: <GraduationCap className="text-blue-500" size={20} />,
+                },
+                {
+                  label: "Level",
+                  value: "All Levels",
+                  icon: <BookOpen className="text-blue-500" size={20} />,
+                },
+                {
+                  label: "Access",
+                  value: "Lifetime",
+                  icon: <Globe className="text-blue-500" size={20} />,
+                },
               ].map((item, i) => (
                 <div key={i} className="space-y-2">
                   <div className="flex items-center gap-2">
                     {item.icon}
-                    <p className="text-slate-400 text-xs font-black uppercase tracking-widest">{item.label}</p>
+                    <p className="text-slate-400 text-xs font-black uppercase tracking-widest">
+                      {item.label}
+                    </p>
                   </div>
-                  <p className="font-black text-slate-800 text-lg ml-7">{item.value}</p>
+                  <p className="font-black text-slate-800 text-lg ml-7">
+                    {item.value}
+                  </p>
                 </div>
               ))}
             </div>
@@ -941,15 +1181,23 @@ const CourseDetails = () => {
                       </span>
                       Active Live Broadcasts
                     </h2>
-                    <p className="text-blue-100 font-medium">Join scheduled interactive sessions led by industry experts.</p>
+                    <p className="text-blue-100 font-medium">
+                      Join scheduled interactive sessions led by industry
+                      experts.
+                    </p>
                   </div>
                 </div>
 
                 <div className="mt-8 space-y-4 relative z-10">
                   {activeLiveSessions.map((session, idx) => (
-                    <div key={idx} className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div
+                      key={idx}
+                      className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-1">{session.batchMonth} Batch</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-1">
+                          {session.batchMonth} Batch
+                        </p>
                         <h3 className="font-bold text-lg">{session.topic}</h3>
                       </div>
                       <div className="flex items-center gap-4">
@@ -962,11 +1210,19 @@ const CourseDetails = () => {
                           </div>
                         )}
                         {enrolled ? (
-                          <a href={session.link} target="_blank" rel="noreferrer" className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-xl shrink-0">
+                          <a
+                            href={session.link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-xl shrink-0"
+                          >
                             <Video size={18} /> Join Now
                           </a>
                         ) : (
-                          <button onClick={handleEnroll} className="px-5 py-2.5 bg-white/20 text-white rounded-xl font-bold flex items-center gap-2 shadow-inner shrink-0 cursor-not-allowed">
+                          <button
+                            onClick={handleEnroll}
+                            className="px-5 py-2.5 bg-white/20 text-white rounded-xl font-bold flex items-center gap-2 shadow-inner shrink-0 cursor-not-allowed"
+                          >
                             <Lock size={18} /> Enroll to Unlock
                           </button>
                         )}
@@ -987,11 +1243,19 @@ const CourseDetails = () => {
                 </h2>
                 <div className="grid md:grid-cols-2 gap-4">
                   {course.learn.map((item, index) => (
-                    <div key={index} className="flex items-start gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-blue-200 transition-all">
+                    <div
+                      key={index}
+                      className="flex items-start gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-blue-200 transition-all"
+                    >
                       <div className="bg-white p-1 rounded-full shadow-sm">
-                        <CheckCircle className="text-blue-500 shrink-0" size={22} />
+                        <CheckCircle
+                          className="text-blue-500 shrink-0"
+                          size={22}
+                        />
                       </div>
-                      <span className="font-bold text-slate-600 leading-tight">{item}</span>
+                      <span className="font-bold text-slate-600 leading-tight">
+                        {item}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1005,12 +1269,17 @@ const CourseDetails = () => {
                 </h2>
                 <div className="space-y-4">
                   {course.content.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center p-6 rounded-2xl border border-slate-100 hover:border-blue-500/20 hover:bg-blue-50/20 transition-all cursor-pointer group">
+                    <div
+                      key={index}
+                      className="flex justify-between items-center p-6 rounded-2xl border border-slate-100 hover:border-blue-500/20 hover:bg-blue-50/20 transition-all cursor-pointer group"
+                    >
                       <div className="flex items-center gap-6">
                         <span className="text-3xl font-black text-slate-100 group-hover:text-blue-500/20 transition-all">
-                          {String(index + 1).padStart(2, '0')}
+                          {String(index + 1).padStart(2, "0")}
                         </span>
-                        <span className="font-black text-slate-700 text-lg">{item}</span>
+                        <span className="font-black text-slate-700 text-lg">
+                          {item}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest">
                         Locked
@@ -1028,7 +1297,10 @@ const CourseDetails = () => {
                 </h2>
                 <ul className="space-y-4">
                   {course.requirements.map((req, i) => (
-                    <li key={i} className="flex items-center gap-4 text-slate-600 font-bold">
+                    <li
+                      key={i}
+                      className="flex items-center gap-4 text-slate-600 font-bold"
+                    >
                       <div className="w-2 h-2 rounded-full bg-slate-200"></div>
                       {req}
                     </li>
@@ -1037,31 +1309,41 @@ const CourseDetails = () => {
               </div>
 
               {/* Instructor Section */}
-
             </div>
           </div>
 
           {/* SIDEBAR PANEL */}
           <div className="relative">
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-lg sticky top-24 p-6 flex flex-col items-center">
-
               <div className="w-full text-center mb-6">
-                <p className="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-2 px-4 py-1.5 bg-slate-50 rounded-full inline-block">Enrollment Fee</p>
+                <p className="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-2 px-4 py-1.5 bg-slate-50 rounded-full inline-block">
+                  Enrollment Fee
+                </p>
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-4xl font-black text-blue-600 italic tracking-tighter">₹{course.price}</span>
+                  <span className="text-4xl font-black text-blue-600 italic tracking-tighter">
+                    ₹{course.price}
+                  </span>
                 </div>
-                <p className="text-slate-400 text-sm font-bold mt-4 italic">No hidden charges • GST Included</p>
+                <p className="text-slate-400 text-sm font-bold mt-4 italic">
+                  No hidden charges • GST Included
+                </p>
               </div>
 
               {/* USP List */}
               <div className="w-full space-y-3 mb-6">
                 {[
                   { text: "Full lifetime access", color: "text-green-500" },
-                  { text: "Certificate of completion", color: "text-green-500" },
+                  {
+                    text: "Certificate of completion",
+                    color: "text-green-500",
+                  },
                   { text: "Access on all devices", color: "text-green-500" },
-                  { text: "24/7 Premium Support", color: "text-green-500" }
+                  { text: "24/7 Premium Support", color: "text-green-500" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-4 text-slate-600 font-black text-sm">
+                  <div
+                    key={i}
+                    className="flex items-center gap-4 text-slate-600 font-black text-sm"
+                  >
                     <div className="bg-green-50 p-1.5 rounded-lg border border-green-100">
                       <CheckCircle className="text-green-500" size={16} />
                     </div>
@@ -1141,21 +1423,22 @@ const CourseDetails = () => {
                   </button>
                 ) : partial ? (
                   <button
-                    onClick={() => navigate("/checkout", {
-                      state: {
-                        items: [course],
-                        isBalancePayment: true,
-                        totalOriginal: enrollment.total_fee,
-                        amountPreviouslyPaid: enrollment.amount_paid
-                      }
-                    })}
+                    onClick={() =>
+                      navigate("/checkout", {
+                        state: {
+                          items: [course],
+                          isBalancePayment: true,
+                          totalOriginal: enrollment.total_fee,
+                          amountPreviouslyPaid: enrollment.amount_paid,
+                        },
+                      })
+                    }
                     className="w-full py-5 bg-orange-500 text-white rounded-2xl font-black text-xl transition-all shadow-2xl shadow-orange-500/20 hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3"
                   >
                     Pay Balance <ArrowRight size={22} />
                   </button>
                 ) : (
                   <>
-
                     <button
                       onClick={handleAddToCart}
                       disabled={added}
@@ -1172,10 +1455,11 @@ const CourseDetails = () => {
     items-center
     justify-center
     gap-2
-    ${added
-                          ? "bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 text-emerald-600 cursor-not-allowed"
-                          : "bg-gradient-to-r from-blue-600 to-cyan-500 text-white border border-transparent shadow-lg shadow-blue-500/25 hover:shadow-xl hover:scale-[1.02]"
-                        }
+    ${
+      added
+        ? "bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 text-emerald-600 cursor-not-allowed"
+        : "bg-gradient-to-r from-blue-600 to-cyan-500 text-white border border-transparent shadow-lg shadow-blue-500/25 hover:shadow-xl hover:scale-[1.02]"
+    }
   `}
                     >
                       {added && <CheckCircle size={16} />}
@@ -1222,20 +1506,24 @@ const CourseDetails = () => {
               </div>
 
               {/* Satisfaction Guarantee */}
-              <div className="mt-10 border-t border-slate-50 pt-8 text-center">
-                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Premium Learning Experience</p>
+              <div className="mt-4 border-t border-slate-50 pt-4 text-center">
+                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                  Premium Learning Experience
+                </p>
               </div>
-
             </div>
           </div>
-
         </div>
 
         {/* Recommended Footer */}
         <div className="max-w-7xl mx-auto px-6 mt-24">
           <div className="flex items-center justify-between mb-10">
-            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Recommended Courses</h2>
-            <button className="text-blue-600 font-black flex items-center gap-2 hover:gap-3 transition-all">Explore All <ArrowRight size={20} /></button>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">
+              Recommended Courses
+            </h2>
+            <button className="text-blue-600 font-black flex items-center gap-2 hover:gap-3 transition-all">
+              Explore All <ArrowRight size={20} />
+            </button>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {relatedCourses.map((rel, i) => (
@@ -1244,21 +1532,26 @@ const CourseDetails = () => {
                 onClick={() => navigate(`/course/${rel.id}`)}
                 className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-blue-500/[0.03] hover:shadow-2xl transition-all cursor-pointer group"
               >
-                <img src={rel.img} className="w-full h-48 object-cover rounded-[2rem] group-hover:scale-[1.02] transition-all" alt={rel.title} />
+                <img
+                  src={rel.img}
+                  className="w-full h-48 object-cover rounded-[2rem] group-hover:scale-[1.02] transition-all"
+                  alt={rel.title}
+                />
                 <div className="p-4">
-                  <h3 className="font-black text-slate-800 text-lg leading-tight mb-2">{rel.title}</h3>
-                  <p className="text-blue-600 font-black text-xl italic">₹{rel.price}</p>
+                  <h3 className="font-black text-slate-800 text-lg leading-tight mb-2">
+                    {rel.title}
+                  </h3>
+                  <p className="text-blue-600 font-black text-xl italic">
+                    ₹{rel.price}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </section>
-
     </>
   );
 };
 
 export default CourseDetails;
-
-

@@ -113,7 +113,7 @@ const Assignments = () => {
   });
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto pt-0 pb-4 font-sans">
+    <div className="space-y-4 max-w-5xl mx-auto pt-7 md:pt-0 pb-4 font-sans">
       <input
         type="file"
         ref={fileInputRef}

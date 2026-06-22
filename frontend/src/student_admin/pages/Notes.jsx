@@ -154,7 +154,7 @@ const Notes = () => {
   ];
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto pt-0 pb-4 font-sans">
+    <div className="space-y-5 max-w-5xl mx-auto pt-20 lg:pt-0 pb-4 font-sans">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-1">
         <div className="flex items-center gap-4">

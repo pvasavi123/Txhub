@@ -99,7 +99,7 @@ const Hero = () => {
   return (
     <section
       id="home"
-      className="relative min-h-[calc(100vh-80px)] w-full bg-slate-50 overflow-hidden flex items-start mt-20"
+      className="relative min-h-[85vh] md:min-h-screen w-full bg-slate-50 overflow-hidden flex items-center pt-8 md:pt-0"
       onMouseMove={handleMouseMove}
     >
       {/* Optimized Background Overlay */}
@@ -108,7 +108,7 @@ const Hero = () => {
       {/* --- CONTENT LAYER --- */}
       <div className="relative z-50 w-full max-w-7xl mx-auto px-6 lg:px-16 flex flex-col md:flex-row items-center pointer-events-none mt-0">
 
-        <div className="w-full lg:w-[45%] lg:-ml-6 xl:-ml-12 pt-4 pb-2 md:pt-4 md:pb-20 pointer-events-auto">
+        <div className="w-full lg:w-[45%] lg:-ml-6 xl:-ml-12 pt-0 md:pt-4 pb-8 md:pb-20 pointer-events-auto">
           <div className="max-w-xl animate-in fade-in slide-in-from-left-8 duration-1000 ease-out fill-mode-both">
 
            <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight">
@@ -214,7 +214,7 @@ const Hero = () => {
               </svg>
 
               <div className="absolute inset-0 w-full h-full" style={{ transform: "translateZ(2px)", transformStyle: "preserve-3d" }}>
-                <IsoNode x={400} y={400} imgSrc="https://cdn-icons-png.flaticon.com/512/3048/3048122.png" title="eduWeb" delay={0} isCenter={true} linkTo="/" />
+                <IsoNode x={400} y={400} imgSrc="https://cdn-icons-png.flaticon.com/512/3048/3048122.png" title="Txhub" delay={0} isCenter={true} linkTo="/" />
                 <IsoNode x={600} y={200} icon={Compass} title="Explore" delay={0.3} linkTo="/explore" />
                 <IsoNode x={600} y={650} icon={BookOpen} title="My Courses" delay={0.8} linkTo="/my-courses" />
                 <IsoNode x={200} y={600} icon={Users} title="About Us" delay={0.5} linkTo="/about" />

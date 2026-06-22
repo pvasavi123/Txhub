@@ -192,8 +192,8 @@ const Batches = () => {
   if (!selectedCourse) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
             <Layers className="text-blue-600" />
             Batch Management
           </h1>
@@ -202,13 +202,13 @@ const Batches = () => {
         <p className="text-sm text-slate-400 font-medium">Select a course to view and manage its batches.</p>
 
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="h-32 bg-slate-100 rounded-2xl animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {COURSE_LIST.map(({ name, color, light }) => {
               const count = batchCountByCourse[name] || 0;
                const Icon = getCourseIcon(name);
@@ -234,18 +234,18 @@ const Batches = () => {
     text-left
   "
 >
-  <div className="flex items-start gap-4">
+  <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3 sm:gap-4">
 
     {/* Icon */}
-    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-      <Icon size={22} className="text-blue-600" />
+    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+      <Icon size={18} className="text-blue-600 sm:w-[22px] sm:h-[22px]" />
     </div>
 
     {/* Content */}
     <div className="flex-1">
-      <h3 className="text-lg font-semibold text-slate-800">
-        {name}
-      </h3>
+     <h3 className="text-xs sm:text-base lg:text-lg font-semibold text-slate-800 leading-snug sm:break-words line-clamp-2 sm:line-clamp-none">
+  {name}
+</h3>
 
       
 
@@ -259,8 +259,8 @@ const Batches = () => {
   </div>
 
   {/* Footer */}
-  <div className="mt-5 pt-4 border-t border-slate-100">
-    <div className="flex items-center justify-between text-blue-600 font-medium text-sm">
+  <div className="mt-3 pt-3 border-t border-slate-100">
+    <div className="flex items-center justify-center sm:justify-between text-blue-600 font-medium text-xs sm:text-sm">
       <span>View Batches</span>
 
       <ArrowRight

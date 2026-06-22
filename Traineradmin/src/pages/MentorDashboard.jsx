@@ -6,7 +6,7 @@ import {
   TrendingUp, Award, Clock, Search, MoreVertical, Plus, FileText, Download,
   GraduationCap, Calendar, Bell, X, Upload, Trash2, Eye, Edit3, Check,
   ChevronDown, AlertCircle, Star, Paperclip, LogOut, Layers, ChevronLeft,
-  Video, Radio, StopCircle, History, UserCheck, ChevronRight
+  Video, Radio, StopCircle, History, UserCheck, ChevronRight, Menu
 } from 'lucide-react';
 import api from '../api/client';
 
@@ -143,6 +143,7 @@ export default function MentorDashboard() {
   const [focusIndex, setFocusIndex] = useState(0);
   const [onlineClasses, setOnlineClasses] = useState([]);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const trainerDataRaw = localStorage.getItem('trainer_data');
@@ -304,10 +305,8 @@ export default function MentorDashboard() {
 
   // Use real API data for stats, fall back to local state
   const stats = [
-    { label: 'Total Students', value: (overviewData?.total_students ?? students.length).toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', trend: '+12%' },
-    { label: 'Active Courses', value: courses.length.toString(), icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-100', trend: '+2' },
-    { label: 'Total Notes', value: (overviewData?.total_notes ?? notes.length).toString(), icon: FileText, color: 'text-green-600', bg: 'bg-green-100', trend: '+3' },
-    { label: 'Assignments', value: (overviewData?.total_assignments ?? assignments.length).toString(), icon: ClipboardList, color: 'text-rose-600', bg: 'bg-rose-100', trend: `+${overviewData?.active_assignments ?? assignments.filter(a => a.status === 'Active').length}` },
+    { label: 'Total Students', value: (overviewData?.total_students ?? students.length).toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-l-blue-500' },
+    { label: 'Active Courses', value: courses.length.toString(), icon: BookOpen, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-l-indigo-500' },
   ];
 
   // ═══════════════════════════════════════════
@@ -327,52 +326,48 @@ export default function MentorDashboard() {
             Loading real data from server...
           </div>
         )}
-<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
   {stats.map((stat, idx) => (
     <motion.div
       key={idx}
       whileHover={{ y: -6, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="
+      className={`
         group
         relative
         overflow-hidden
         rounded-3xl
         bg-white
-        border border-slate-200
+        border-l-4 ${stat.border} border border-y-slate-200 border-r-slate-200
         p-6
         shadow-[0_10px_40px_rgba(15,23,42,0.06)]
         hover:shadow-[0_20px_60px_rgba(79,70,229,0.12)]
         transition-all
         duration-300
         cursor-pointer
-      "
+      `}
     >
       {/* Background Glow */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full blur-3xl opacity-0 group-hover:opacity-60 transition-all duration-500" />
 
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4">
           <div
             className={`
-              w-14 h-14
-              rounded-2xl
+              w-12 h-12
+              rounded-xl
               flex items-center justify-center
               ${stat.bg}
               shadow-sm
             `}
           >
-            <stat.icon className={`w-7 h-7 ${stat.color}`} />
-          </div>
-
-          <div className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-xs font-bold border border-green-100">
-            {stat.trend}
+            <stat.icon className={`w-6 h-6 ${stat.color}`} />
           </div>
         </div>
 
         {/* Value */}
-        <h2 className="text-4xl font-black text-slate-800 tracking-tight">
+        <h2 className="text-4xl font-black text-slate-800 tracking-tight mt-2">
           {stat.value}
         </h2>
 
@@ -380,9 +375,6 @@ export default function MentorDashboard() {
         <p className="text-sm text-slate-500 font-medium mt-1">
           {stat.label}
         </p>
-
-        {/* Progress Bar */}
-     
 
         {/* Footer */}
         <div className="mt-5 flex items-center justify-between">
@@ -394,8 +386,6 @@ export default function MentorDashboard() {
             onClick={() => {
               if (idx === 0) setActiveTab("students");
               if (idx === 1) setActiveTab("courses");
-              if (idx === 2) setActiveTab("notes");
-              if (idx === 3) setActiveTab("assignments");
             }}
             className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-all group"
           >
@@ -1945,6 +1935,114 @@ export default function MentorDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50/50 flex font-sans">
+      {/* Mobile Top Navbar */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-lg border-b border-slate-200/80 px-6 flex items-center justify-between z-[140] shadow-sm">
+        <img
+          src="/logo1.png"
+          alt="TX Hub"
+          className="h-10 w-auto object-contain mix-blend-multiply brightness-110 contrast-110"
+        />
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition-colors"
+        >
+          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </header>
+
+      {/* Mobile Sidebar/Drawer Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[145]"
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="lg:hidden fixed top-0 bottom-0 left-0 w-72 bg-white z-[150] shadow-2xl p-6 flex flex-col justify-between"
+            >
+              <div>
+                {/* Logo & Close */}
+                <div className="flex items-center justify-between mb-8">
+                  <img
+                    src="/logo1.png"
+                    alt="TX Hub"
+                    className="h-12 w-auto object-contain mix-blend-multiply brightness-110 contrast-110"
+                  />
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Tabs */}
+                <nav className="space-y-2">
+                  {TABS.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`group relative w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all duration-300 active:scale-95 ${
+                          isActive
+                            ? 'bg-blue-600 text-white shadow-xl shadow-blue-100'
+                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <tab.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                        <span>{tab.label}</span>
+                        {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />}
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              {/* Profile Card & Logout */}
+              <div className="pt-6 border-t border-slate-100 space-y-4">
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-black">
+                    {(trainerData?.name || "T").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="text-left overflow-hidden">
+                    <p className="text-sm font-black text-slate-800 truncate">{trainerData?.name || "Trainer"}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase truncate">Mentor</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    localStorage.removeItem("trainer_access_token");
+                    localStorage.removeItem("trainer_refresh_token");
+                    localStorage.removeItem("trainer_data");
+                    navigate("/login");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 border border-slate-200 text-slate-600 bg-white rounded-xl font-bold shadow-sm hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 h-screen sticky top-0 p-6 shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex-col justify-between">
         <div>
@@ -1998,22 +2096,22 @@ export default function MentorDashboard() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-h-screen overflow-y-auto p-8 lg:p-12">
+      <main className="flex-1 min-h-screen overflow-y-auto p-4 pt-24 sm:p-8 lg:p-12 pb-12">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+        <div className="flex flex-row justify-between items-center gap-4 mb-6 lg:mb-8">
           <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Mentor Workspace
             </h1>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-slate-500 text-sm">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 lg:mt-2">
+              <span className="text-slate-500 text-xs sm:text-sm">
                 Welcome back,
               </span>
-              <span className="text-blue-600 text-sm font-bold">
+              <span className="text-blue-600 text-xs sm:text-sm font-bold">
                 {trainerData?.name || "Trainer"}
               </span>
-              <span className="text-slate-300">•</span>
-              <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold">
+              <span className="text-slate-300 hidden sm:inline">•</span>
+              <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] sm:text-xs font-semibold">
                 {trainerData?.assigned_course || "All Courses"}
               </span>
             </div>
@@ -2026,10 +2124,10 @@ export default function MentorDashboard() {
               localStorage.removeItem("trainer_data");
               navigate("/login");
             }}
-            className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-600 bg-white rounded-xl font-semibold shadow-sm hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 border border-slate-200 text-slate-600 bg-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-300"
           >
-            <LogOut className="w-4 h-4" />
-            Logout
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Logout</span>
           </button>
         </div>
 
@@ -2048,7 +2146,7 @@ export default function MentorDashboard() {
       }}
       className="relative"
     >
-      <div className="relative overflow-hidden rounded-[32px] bg-white/80 backdrop-blur-xl border border-slate-200 shadow-[0_20px_60px_rgba(15,23,42,0.08)] p-6 lg:p-8">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-[32px] bg-white/80 backdrop-blur-xl border border-slate-200 shadow-[0_20px_60px_rgba(15,23,42,0.08)] p-4 sm:p-6 lg:p-8">
 
         {/* Decorative Background */}
         <div className="absolute top-0 right-0 w-72 h-72 bg-blue-100 rounded-full blur-3xl opacity-40 pointer-events-none"></div>

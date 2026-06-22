@@ -173,10 +173,20 @@ const CourseProgress = () => {
 
   // ── Render ──────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-16 pt-20 lg:pt-0">
 
       {/* ── TOP NAV ── */}
-      <div className="bg-white border-b border-slate-100 py-3.5 px-8 sticky top-0 z-50 flex items-center justify-between">
+      <div className="
+  bg-white
+  border-b border-slate-100
+  py-3 px-4 sm:px-6 lg:px-8
+  sticky top-16 lg:top-0
+  z-40
+  flex flex-col sm:flex-row
+  items-start sm:items-center
+  justify-between
+  gap-3
+">
         <button
           onClick={() => navigate('/admin/courses')}
           className="flex items-center gap-2 text-slate-700 hover:text-blue-600 font-bold transition-all text-sm"
@@ -202,8 +212,22 @@ const CourseProgress = () => {
       </div>
 
       {/* ── HERO BANNER ── */}
-      <div className="max-w-7xl mx-auto px-8 mt-6">
-        <div className="relative rounded-[2rem] overflow-hidden bg-gradient-to-r from-blue-950 via-slate-900 to-blue-950 text-white p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 lg:mt-6">
+        <div className="
+  relative
+  rounded-[2rem]
+  overflow-hidden
+  bg-gradient-to-r
+  from-blue-950
+  via-slate-900
+  to-blue-950
+  text-white
+  p-5 sm:p-8 md:p-12
+  flex flex-col md:flex-row
+  items-center
+  justify-between
+  gap-6
+">
           <div
             className="absolute inset-y-0 right-0 w-1/2 bg-cover bg-center opacity-25 mix-blend-overlay hidden md:block"
             style={{ backgroundImage: `url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800')` }}
@@ -277,7 +301,7 @@ const CourseProgress = () => {
       </div>
 
       {/* ── KPI STAT CARDS ── */}
-      <div className="max-w-7xl mx-auto px-8 mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
         {[
           { label: 'Total Enrolled', value: totalEnrolled, icon: <Users size={15} />, color: 'blue' },
           { label: 'Completed', value: completedCount, icon: <Award size={15} />, color: 'emerald' },
@@ -296,56 +320,65 @@ const CourseProgress = () => {
       </div>
 
       {/* ── FILTERS ── */}
-      <div className="max-w-7xl mx-auto px-8 mt-7 flex flex-col lg:flex-row items-center gap-4 justify-between">
-        {/* Search */}
-        <div className="relative w-full lg:max-w-xs shrink-0">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            id="student-search"
-            type="text"
-            placeholder="Search by name or email…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 shadow-sm"
-          />
-        </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+  <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
 
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
-          {/* Status filter */}
-          <select
-            id="status-filter"
-            value={selectedStatus}
-            onChange={e => setSelectedStatus(e.target.value)}
-            className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-600 focus:outline-none cursor-pointer shadow-sm min-w-32"
-          >
-            <option value="All">All Status</option>
-            <option value="Completed">Completed</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Not Started">Not Started</option>
-          </select>
+    {/* Search */}
+    <div className="relative w-full lg:max-w-sm">
+      <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+      <input
+        id="student-search"
+        type="text"
+        placeholder="Search by name or email..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 shadow-sm"
+      />
+    </div>
 
-          {/* Batch filter */}
-          <select
-            id="batch-filter"
-            value={selectedBatch}
-            onChange={e => setSelectedBatch(e.target.value)}
-            className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-600 focus:outline-none cursor-pointer shadow-sm min-w-32"
-          >
-            <option value="All">All Batches</option>
-            {uniqueBatches.map((b, i) => <option key={i} value={b}>{b}</option>)}
-          </select>
+    {/* Filters */}
+    <div className="w-full lg:w-auto">
+      <div className="grid grid-cols-2 sm:flex gap-3">
 
-          <button className="p-2.5 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors shadow-sm">
-            <SlidersHorizontal size={15} />
-          </button>
-          <button className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
-            <Download size={15} />
-          </button>
-        </div>
+        {/* Status Filter */}
+        <select
+          id="status-filter"
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          className="w-full sm:w-auto bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 focus:outline-none cursor-pointer shadow-sm"
+        >
+          <option value="All">All Status</option>
+          <option value="Completed">Completed</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Not Started">Not Started</option>
+        </select>
+
+        {/* Batch Filter */}
+        <select
+          id="batch-filter"
+          value={selectedBatch}
+          onChange={(e) => setSelectedBatch(e.target.value)}
+          className="w-full sm:w-auto bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 focus:outline-none cursor-pointer shadow-sm"
+        >
+          <option value="All">All Batches</option>
+          {uniqueBatches.map((b, i) => (
+            <option key={i} value={b}>
+              {b}
+            </option>
+          ))}
+        </select>
+
+        {/* Buttons */}
+    
+
       </div>
+    </div>
+
+  </div>
+</div>
 
       {/* ── DATA TABLE ── */}
-      <div className="max-w-7xl mx-auto px-8 mt-5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-5">
         <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden">
 
           {/* Loading */}

@@ -101,55 +101,110 @@ export default function Attendance() {
   const attendancePct = totalStudents > 0 ? Math.round((totalPresent / totalStudents) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-16 sm:pt-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-          <UserCheck className="w-7 h-7 text-blue-600" /> Attendance Management
-        </h1>
-        <p className="text-slate-500 mt-1 text-sm">View and filter attendance across all mentors and batches</p>
-      </div>
+     <div className="flex flex-col gap-2">
+  <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-800 flex items-start sm:items-center gap-3 leading-tight">
+    <UserCheck className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 flex-shrink-0 mt-0.5 sm:mt-0" />
+
+    <span className="break-words">
+      Attendance Management
+    </span>
+  </h1>
+
+  <p className="text-slate-500 text-xs sm:text-sm leading-relaxed max-w-2xl">
+    View and filter attendance across all mentors and batches
+  </p>
+</div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <form onSubmit={handleFilter} className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Mentor</label>
-            <select value={filterMentor} onChange={e => setFilterMentor(e.target.value)}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
-              <option value="">All Mentors</option>
-              {mentors.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
-          </div>
-          <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Batch</label>
-            <select value={filterBatch} onChange={e => setFilterBatch(e.target.value)}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
-              <option value="">All Batches</option>
-              {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
-          <div className="flex-1 min-w-[140px]">
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Date</label>
-            <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
-          </div>
-          <div className="flex gap-2">
-            <button type="submit"
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors">
-              <Filter className="w-4 h-4" /> Apply
-            </button>
-            <button type="button" onClick={clearFilters}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors">
-              <X className="w-4 h-4" /> Clear
-            </button>
-            <button type="button" onClick={fetchRecords}
-              className="p-2.5 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors" title="Refresh">
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
-        </form>
-      </div>
+     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-5">
+  <form
+    onSubmit={handleFilter}
+    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+  >
+
+    {/* Mentor */}
+    <div>
+      <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
+        Mentor
+      </label>
+      <select
+        value={filterMentor}
+        onChange={e => setFilterMentor(e.target.value)}
+        className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+      >
+        <option value="">All Mentors</option>
+        {mentors.map(m => (
+          <option key={m.id} value={m.id}>
+            {m.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Batch */}
+    <div>
+      <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
+        Batch
+      </label>
+      <select
+        value={filterBatch}
+        onChange={e => setFilterBatch(e.target.value)}
+        className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+      >
+        <option value="">All Batches</option>
+        {batches.map(b => (
+          <option key={b.id} value={b.id}>
+            {b.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Date */}
+    <div>
+      <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
+        Date
+      </label>
+      <input
+        type="date"
+        value={filterDate}
+        onChange={e => setFilterDate(e.target.value)}
+        className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+      />
+    </div>
+
+    {/* Buttons */}
+    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+      <button
+        type="submit"
+        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold"
+      >
+        <Filter className="w-4 h-4" />
+        Apply
+      </button>
+
+      <button
+        type="button"
+        onClick={clearFilters}
+        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold"
+      >
+        <X className="w-4 h-4" />
+        Clear
+      </button>
+
+      <button
+        type="button"
+        onClick={fetchRecords}
+        className="flex items-center justify-center p-3 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50"
+      >
+        <RefreshCw className="w-4 h-4" />
+      </button>
+    </div>
+
+  </form>
+</div>
 
       {/* Records Table */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
