@@ -107,12 +107,14 @@ const CheckoutPage = () => {
       const email = user?.email;
 
       // 1. Save checkout data to localStorage BEFORE redirect
+      // For balance payments: use totalOriginal as total_fee so the enrollment
+      // correctly reflects the full course price after unlocking.
       const checkoutData = {
         email: email,
         items: items,
         amount: totalToPay,
-        total_fee: subtotalBase,
-        enrollment_type: enrollmentType,
+        total_fee: isBalancePayment ? totalOriginal : subtotalBase,
+        enrollment_type: isBalancePayment ? "full" : (classType === "live" ? "full" : "slot"),
         batch_date: batchDate,
         payment_method: paymentMethod,
         billing_country: billingCountry,
@@ -131,8 +133,8 @@ const CheckoutPage = () => {
           customer_phone: user?.phone || "9999999999",
           return_url: window.location.origin,
           items: items,
-          total_fee: subtotalBase,
-          enrollment_type: enrollmentType,
+          total_fee: isBalancePayment ? totalOriginal : subtotalBase,
+          enrollment_type: isBalancePayment ? "full" : (classType === "live" ? "full" : "slot"),
           batch_date: batchDate,
           payment_method: paymentMethod,
           billing_country: billingCountry,
@@ -211,20 +213,20 @@ const CheckoutPage = () => {
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] block">
                   Select Batch Start Date
                 </label>
-                <div className="relative max-w-[340px]">
-                  <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  <select
-                    value={batchDate}
-                    onChange={(e) => setBatchDate(e.target.value)}
-                    className="w-full h-14 pl-12 pr-12 border border-slate-200 rounded-[16px] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold text-slate-700 bg-white appearance-none cursor-pointer text-sm"
-                    required
-                  >
-                    <option value="01 June 2026">01 June 2026</option>
-                    <option value="15 June 2026">15 June 2026</option>
-                    <option value="01 July 2026">01 July 2026</option>
-                  </select>
-                  <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                </div>
+               <div className="relative max-w-[340px]">
+  <Calendar
+    size={18}
+    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"
+  />
+
+  <input
+    type="date"
+    value={batchDate}
+    onChange={(e) => setBatchDate(e.target.value)}
+    className="w-full h-14 pl-12 pr-4 border border-slate-200 rounded-[16px] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all font-semibold text-slate-700 bg-white text-sm"
+    required
+  />
+</div>
               </div>
 
               {/* Select Class Type */}

@@ -864,14 +864,14 @@ const [selectedOption, setSelectedOption] = useState("");
 
                             {/* Cart */}
                             <button
-                              onClick={(e) => !enrolled && handleAddToCart(e, course)}
-                              disabled={added || enrolled}
-                              className={`flex-1 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center ${added || enrolled
+                              onClick={(e) => !enrolled && !partial && handleAddToCart(e, course)}
+                              disabled={added || enrolled || partial}
+                              className={`flex-1 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center ${added || enrolled || partial
                                 ? "bg-green-100 text-green-600"
                                 : "bg-slate-100 text-slate-600"
                                 }`}
                             >
-                              {added || enrolled ? <CheckCircle size={18} /> : <ShoppingCart size={18} />}
+                              {added || enrolled || partial ? <CheckCircle size={18} /> : <ShoppingCart size={18} />}
                             </button>
 
                           </div>

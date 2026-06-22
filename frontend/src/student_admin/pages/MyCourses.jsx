@@ -350,21 +350,55 @@ const MyCourses = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 flex gap-2">
-                  {/* Start Course button */}
-                  <button
-                    onClick={() => navigate('/courses')}
-                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-sm"
-                  >
-                    <PlayCircle size={16} />
-                    Start Course
-                  </button>
+                {!isFullyPaid && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
+<p className="text-amber-500 font-bold text-sm leading-normal">
+  Clear your balance to unlock full access.
+</p>
+                    <p className="text-[10px] text-amber-700 font-bold mt-1">
+                      Balance: ₹{(parseFloat(course.total_fee || 4999) - parseFloat(course.amount_paid || 500)).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mt-4 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate('/courses')}
+                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-sm"
+                    >
+                      <PlayCircle size={16} />
+                      Start Course
+                    </button>
+                    {!isFullyPaid && (
+                      <button
+                        onClick={() => {
+                          const courseItem = (course.items && course.items[0]) || {
+                            id: course.id,
+                            title: course.title,
+                            price: course.total_fee || "4999",
+                          };
+                          navigate("/checkout", {
+                            state: {
+                              items: [courseItem],
+                              isBalancePayment: true,
+                              totalOriginal: parseFloat(course.total_fee || 4999),
+                              amountPreviouslyPaid: parseFloat(course.amount_paid || 500),
+                            }
+                          });
+                        }}
+                        className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-sm shadow-md"
+                      >
+                        Pay Balance
+                      </button>
+                    )}
+                  </div>
 
                   {isCompleted && (
                     <button
                       onClick={() => openCertificateModal(course)}
                       disabled={downloading === course.id}
-                      className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 text-sm disabled:opacity-60"
+                      className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 text-sm disabled:opacity-60"
                     >
                       {downloading === course.id ? (
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -6,6 +6,11 @@ from django.db.models import Sum
 from django.core.cache import cache
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
+from django.http import JsonResponse
+import json
+import hmac
+import hashlib
+import base64
 
 # ReportLab and PDF Generation imports
 from reportlab.pdfgen import canvas
@@ -404,6 +409,8 @@ def register_student(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
 def create_enrollment(request):
     data = request.data
     print("📥 INCOMING DATA:", data)
@@ -413,10 +420,27 @@ def create_enrollment(request):
     if not email:
         return Response({"error": "Email is required"}, status=400)
 
+    user = None
     try:
         user = UserRegister.objects.get(email=email)
     except UserRegister.DoesNotExist:
-        return Response({"error": "User not found"}, status=404)
+        # Try to find in Student table first
+        student = Student.objects.filter(email=email).first()
+        if student:
+            user = UserRegister.objects.create(
+                full_name=student.name,
+                email=student.email,
+                phone=student.phone,
+                password=student.password
+            )
+        else:
+            # Create a fallback UserRegister record so checkout works smoothly
+            user = UserRegister.objects.create(
+                full_name="Student",
+                email=email,
+                phone="0000000000",
+                password=make_password("Student123")
+            )
 
     # ✅ Get items
     items = data.get("items", [])
@@ -426,7 +450,10 @@ def create_enrollment(request):
     enrollment_type = data.get("enrollment_type")  # full | slot
     amount = int(data.get("amount", 0))
     total_fee = int(data.get("total_fee", 0))
-    batch_date = data.get("batch_date")
+    batch_date = data.get("batch_date") or "Not Specified"
+    payment_method = data.get("payment_method", "upi")
+    billing_country = data.get("billing_country", "India")
+    billing_state = data.get("billing_state", "")
 
     results = []
 
@@ -448,19 +475,26 @@ def create_enrollment(request):
         if existing:
             print(f"⚠️ Already exists: {title}")
 
-            # ✅ SLOT PAYMENT (increment)
-            if enrollment_type == "slot":
-                existing.amount_paid += 500
+            # Check if this is a full payment or a balance payment completing the fee
+            if amount >= (existing.total_fee - existing.amount_paid) or amount == total_fee:
+                target_total = max(total_fee, int(existing.total_fee or 0))
+                existing.amount_paid = target_total
+            else:
+                # If they are paying slot/installment/recorded classes,
+                # set amount_paid to the new amount if it is greater,
+                # or keep the maximum to prevent double-adding on concurrent requests.
+                existing.amount_paid = max(existing.amount_paid, amount)
 
-            # ✅ FULL PAYMENT (overwrite)
-            elif enrollment_type == "full":
-                existing.amount_paid = total_fee
-
-            # ✅ Update other fields
+            # ✅ Update other fields (keep existing items to preserve calculate_total_fee)
             existing.enrollment_type = enrollment_type
             existing.batch_date = batch_date
-            existing.items = [item]   # 🔥 FIX for NOT NULL error
-            existing.total_fee = total_fee
+            # Only update items if this is NOT a balance payment (items already set on first enrollment)
+            if not total_fee or total_fee == amount:
+                # Full original payment: safe to update items
+                existing.items = [item]
+            existing.payment_method = payment_method
+            existing.billing_country = billing_country
+            existing.billing_state = billing_state
 
             existing.save()
 
@@ -472,10 +506,13 @@ def create_enrollment(request):
                 user=user,
                 title=title,
                 items=[item],   # 🔥 FIX for NOT NULL error
-                amount_paid=amount if enrollment_type == "full" else 500,
+                amount_paid=amount,
                 total_fee=total_fee,
                 enrollment_type=enrollment_type,
-                batch_date=batch_date
+                batch_date=batch_date,
+                payment_method=payment_method,
+                billing_country=billing_country,
+                billing_state=billing_state,
             )
 
             print("✅ CREATED:", new_enrollment.id)
@@ -661,6 +698,8 @@ def google_login(request):
 from django.db import connection
 
 @api_view(['GET'])
+@authentication_classes([])
+@permission_classes([])
 def get_enrollments(request):
     """
     Retrieve all enrollments, optionally filtered by email
@@ -789,6 +828,8 @@ def forgot_password(request):
 
 
 @api_view(['GET', 'POST'])
+@authentication_classes([])
+@permission_classes([])
 def create_live_class(request):
     if request.method == 'GET':
         live_classes = LiveClass.objects.all().order_by('-id')
@@ -814,6 +855,8 @@ def delete_live_class(request, pk):
         return Response({"error": "Live class not found"}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET', 'POST'])
+@authentication_classes([])
+@permission_classes([])
 def create_recorded_class(request):
     if request.method == 'GET':
         recorded_classes = RecordedClass.objects.all().order_by('-id')
@@ -839,6 +882,8 @@ def delete_recorded_class(request, pk):
         return Response({"error": "Recorded class not found"}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET', 'POST'])
+@authentication_classes([])
+@permission_classes([])
 def create_resource(request):
     if request.method == 'GET':
         resources = Resource.objects.all().order_by('-id')
@@ -2348,7 +2393,22 @@ def payment(request):
     )
  
     return Response(data)
- 
+
+def verify_cashfree_signature(raw_body, received_signature, timestamp):
+    secret_key = getattr(settings, 'CASHFREE_CLIENT_SECRET', None)
+    if not secret_key:
+        return False
+    if isinstance(raw_body, bytes):
+        raw_body = raw_body.decode('utf-8')
+    message = timestamp + raw_body
+    signature = hmac.new(
+        key=secret_key.encode('utf-8'),
+        msg=message.encode('utf-8'),
+        digestmod=hashlib.sha256
+    ).digest()
+    expected_signature = base64.b64encode(signature).decode('utf-8')
+    return hmac.compare_digest(expected_signature, received_signature)
+
 @csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])

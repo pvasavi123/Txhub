@@ -1218,6 +1218,20 @@ const CourseDetails = () => {
                           >
                             <Video size={18} /> Join Now
                           </a>
+                        ) : partial ? (
+                          <button
+                            onClick={() => navigate("/checkout", {
+                              state: {
+                                items: [course],
+                                isBalancePayment: true,
+                                totalOriginal: enrollment.total_fee,
+                                amountPreviouslyPaid: enrollment.amount_paid,
+                              }
+                            })}
+                            className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold flex items-center gap-2 shadow-xl shrink-0 transition-colors"
+                          >
+                            <Lock size={18} /> Pay Balance to Unlock
+                          </button>
                         ) : (
                           <button
                             onClick={handleEnroll}
@@ -1422,21 +1436,31 @@ const CourseDetails = () => {
                     Start Course <ArrowRight size={22} />
                   </button>
                 ) : partial ? (
-                  <button
-                    onClick={() =>
-                      navigate("/checkout", {
-                        state: {
-                          items: [course],
-                          isBalancePayment: true,
-                          totalOriginal: enrollment.total_fee,
-                          amountPreviouslyPaid: enrollment.amount_paid,
-                        },
-                      })
-                    }
-                    className="w-full py-5 bg-orange-500 text-white rounded-2xl font-black text-xl transition-all shadow-2xl shadow-orange-500/20 hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3"
-                  >
-                    Pay Balance <ArrowRight size={22} />
-                  </button>
+                  <div className="space-y-4 w-full">
+                    <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl text-center space-y-2">
+                     <p className="text-amber-800 font-extrabold text-sm leading-normal">
+  You currently have access to recorded classes only. Please pay the remaining balance to unlock full course access.
+</p>
+                      <p className="text-xs text-amber-700 font-bold">
+                        To unlock full course pay all amount: ₹{(parseFloat(enrollment.total_fee) - parseFloat(enrollment.amount_paid)).toLocaleString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        navigate("/checkout", {
+                          state: {
+                            items: [course],
+                            isBalancePayment: true,
+                            totalOriginal: enrollment.total_fee,
+                            amountPreviouslyPaid: enrollment.amount_paid,
+                          },
+                        })
+                      }
+                      className="w-full py-5 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-black text-xl transition-all shadow-2xl shadow-orange-500/20 hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3"
+                    >
+                      Pay Balance <ArrowRight size={22} />
+                    </button>
+                  </div>
                 ) : (
                   <>
                     <button
