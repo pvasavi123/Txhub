@@ -692,10 +692,10 @@ const Users = () => {
                               className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium transition-all"
                             />
                             <select
-                              className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium bg-white"
-                              value={activeCourse.assigned_batch || ""}
-                              onChange={(e) => handleLocalBatchChange(e.target.value)}
-                            >
+  className="w-full border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium bg-white"
+  value={activeCourse.assigned_batch || ""}
+  onChange={(e) => handleLocalBatchChange(e.target.value)}
+>
                               <option value="">Select Batch...</option>
                               {batches
                                 .filter(b => b.name.toLowerCase().includes(batchSearch.toLowerCase()) || (b.course && b.course.toLowerCase().includes(batchSearch.toLowerCase())))
@@ -774,11 +774,11 @@ const Users = () => {
                               onChange={(e) => setMentorSearch(e.target.value)}
                               className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium transition-all"
                             />
-                            <select
-                              className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium bg-white"
-                              value={activeCourse.assigned_mentor || ""}
-                              onChange={(e) => handleLocalMentorChange(e.target.value)}
-                            >
+                         <select
+  className="w-full border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-medium bg-white"
+  value={activeCourse.assigned_mentor || ""}
+  onChange={(e) => handleLocalMentorChange(e.target.value)}
+>
                               <option value="">Select Mentor...</option>
                               {mentors
                                 .filter(m => m.is_active && (m.name.toLowerCase().includes(mentorSearch.toLowerCase()) || (m.assigned_course && m.assigned_course.toLowerCase().includes(mentorSearch.toLowerCase()))))
