@@ -262,7 +262,7 @@ const MyCourses = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {enrollments.map((course, idx) => {
             const isFullyPaid = course.payment_status?.toLowerCase() === 'completed';
             const progress = course.progress !== undefined ? course.progress : 0;
@@ -323,7 +323,7 @@ const MyCourses = () => {
                   </div>
                 </div>
 
-                <div className="flex-1">
+                <div>
                   <h3 className="font-bold text-lg text-slate-800 line-clamp-2">{course.title}</h3>
                   <div className="flex items-center gap-2 text-slate-500 text-xs mt-2">
                     <span>Enrolled: {new Date(course.created_at).toLocaleDateString()}</span>

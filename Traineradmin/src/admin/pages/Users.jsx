@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Download, IndianRupee, ShieldCheck, Users as UsersIcon,
-  Wallet, Activity, Cpu, Globe, Eye, Edit2, Check, X
+  Wallet, Activity, Cpu, Globe, Eye, Edit2, Check, X, Layers, User
 } from 'lucide-react';
 
 import { useAdmin } from '../context/AdminContext';
